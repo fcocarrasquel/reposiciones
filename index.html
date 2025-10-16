@@ -169,27 +169,48 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const addProductForm = document.getElementById('addProductForm')
-    addProductForm.addEventListener('submit', async (e) => {
-        e.preventDefault()
-        const productName = document.getElementById('productName').value
-        const supplierName = document.getElementById('supplierName').value
-        if (!productName || !supplierName) return
+    const addProductForm = document.getElementById('addProductForm');
+addProductForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
 
-        try {
-            const res = await fetch('/api?action=add', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ productName, supplierName })
-            })
-            if (!res.ok) throw new Error('Error al añadir producto')
-            showToast('Producto añadido con éxito.')
-            addProductForm.reset()
-            renderMissingProducts()
-        } catch (err) {
-            showToast('Error al añadir producto.', true)
-        }
+  // 🔠 Forzamos todo a MAYÚSCULAS y limpiamos espacios
+  const productName = document.getElementById('productName').value.trim().toUpperCase();
+  const supplierName = document.getElementById('supplierName').value.trim().toUpperCase();
+
+  if (!productName || !supplierName) return;
+
+  try {
+    // 🔍 Primero obtenemos la lista actual para evitar duplicados exactos (producto + proveedor)
+    const resMissing = await fetch('/api?action=getMissing');
+    const missingProducts = await resMissing.json();
+
+    const alreadyExists = missingProducts.some(p =>
+      p.product_name.toUpperCase() === productName &&
+      p.supplier_name.toUpperCase() === supplierName
+    );
+
+    if (alreadyExists) {
+      showToast('Ese producto ya está pendiente con ese proveedor.', true);
+      return;
+    }
+
+    // ✅ Si no existe, lo agregamos
+    const res = await fetch('/api?action=add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productName, supplierName })
     });
+
+    if (!res.ok) throw new Error('Error al añadir producto');
+    showToast('Producto añadido con éxito.');
+    addProductForm.reset();
+    renderMissingProducts();
+
+  } catch (err) {
+    showToast('Error al añadir producto.', true);
+  }
+});
+
 
     async function renderMissingProducts() {
         const list = document.getElementById('missingProductsList');
@@ -352,6 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
+
 
 
 
