@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Productos Faltantes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .sidebar-link.active {
+            background-color: #fff;
+            color: #f97316;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-16 md:w-64 bg-white border-r flex flex-col">
+            <div class="border-b p-4">
+                <h1 class="text-xl font-bold text-orange-500 hidden md:block">Productos por Reposición</h1>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-orange-500 md:hidden mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+            </div>
+            <nav class="flex-1 p-2 space-y-2">
+                <a href="#productos" id="nav-productos" class="sidebar-link flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span class="ml-4 hidden md:block">Productos Faltantes</span>
+                </a>
+                <a href="#historial" id="nav-historial" class="sidebar-link flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v11.494M12 6.253a3.75 3.75 0 01-3.75-3.75H8.25m3.75 3.75a3.75 3.75 0 003.75-3.75H15.75m-3.75 3.75v11.494m0 0a3.75 3.75 0 013.75 3.75H15.75m-3.75-3.75a3.75 3.75 0 00-3.75 3.75H8.25m9-9.563c.64-.094 1.282-.187 1.94-.282m-1.94.282a3.75 3.75 0 00-3.75 0m-3.75 0c.658.095 1.3.188 1.94.282m0 0a3.75 3.75 0 003.75 0m-13.5 0c.64-.094 1.282-.187 1.94-.282m-1.94.282a3.75 3.75 0 013.75 0m0 0c.658.095 1.3.188 1.94.282m0 0a3.75 3.75_0 013.75 0" /></svg>
+                    <span class="ml-4 hidden md:block">Historial</span>
+                </a>
+                <a href="#metricas" id="nav-metricas" class="sidebar-link flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                    <span class="ml-4 hidden md:block">Métricas</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 md:p-8 overflow-y-auto">
+            
+            <!-- Vista: Productos Faltantes -->
+            <div id="view-productos" class="page-view">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-1">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h2 class="text-xl font-bold mb-4">Añadir Producto Faltante</h2>
+                            <form id="addProductForm" class="space-y-4">
+                                <div>
+                                    <label for="productName" class="block text-sm font-medium text-gray-700">Nombre del Producto</label>
+                                    <input type="text" id="productName" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                </div>
+                                <div>
+                                    <label for="supplierName" class="block text-sm font-medium text-gray-700">Proveedor</label>
+                                    <input type="text" id="supplierName" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                </div>
+                                <button type="submit" class="w-full bg-orange-500 text-white font-bold py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors">Añadir Producto</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2">
+                         <h2 class="text-xl font-bold mb-4">Productos Faltantes Actuales</h2>
+                         <p class="text-gray-500 mb-4">Una lista de productos que están actualmente fuera de stock.</p>
+                         <div id="missingProductsList" class="space-y-4">
+                            <!-- Los productos se insertarán aquí dinámicamente -->
+                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vista: Historial -->
+            <div id="view-historial" class="page-view hidden">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-bold mb-4">Historial de Productos</h2>
+                    <p class="text-gray-500 mb-6">Un registro de todos los productos previamente faltantes que han sido reabastecidos.</p>
+                    <div id="historyList">
+                        <!-- El historial se insertará aquí -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vista: Métricas -->
+            <div id="view-metricas" class="page-view hidden">
+                <h2 class="text-2xl font-bold mb-6">Métricas de Inventario</h2>
+                <p class="text-gray-500 mb-6">Visualiza métricas clave sobre tu inventario de productos.</p>
+                <!-- Stat Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                        <h3 class="text-gray-500 font-medium">Productos Faltantes Actuales</h3>
+                        <p id="metric-missing" class="text-4xl font-bold text-red-500 mt-2">0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                        <h3 class="text-gray-500 font-medium">Productos Recibidos (Historial)</h3>
+                        <p id="metric-received" class="text-4xl font-bold text-green-500 mt-2">0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                        <h3 class="text-gray-500 font-medium">Tiempo Promedio de Respuesta</h3>
+                        <p id="metric-avg-time" class="text-4xl font-bold text-blue-500 mt-2">0 días</p>
+                    </div>
+                </div>
+                <!-- Chart -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="font-bold mb-4">Productos por Proveedor (del Historial)</h3>
+                    <div class="relative h-96">
+                        <canvas id="supplierChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-5 rounded-lg shadow-xl opacity-0 translate-y-10 transition-all duration-300">
+        <p>¡Acción completada con éxito!</p>
+    </div>
+
+
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    let supplierChartInstance = null;
+
+    // --- CARGA INICIAL ---
+    const initializeApp = () => {
+        setupNavigation();
+        renderMissingProducts();
+        renderHistory();
+        document.getElementById('nav-productos').click();
+    };
+    
+    initializeApp();
+
+    // --- NAVEGACIÓN ---
+    function setupNavigation() {
+        const links = document.querySelectorAll('.sidebar-link');
+        const views = document.querySelectorAll('.page-view');
+
+        links.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href').substring(1);
+
+                views.forEach(view => view.classList.add('hidden'));
+                links.forEach(l => l.classList.remove('active'));
+
+                document.getElementById(`view-${targetId}`).classList.remove('hidden');
+                link.classList.add('active');
+
+                if (targetId === 'metricas') {
+                    calculateAndRenderMetrics();
+                } else if (targetId === 'historial') {
+                    renderHistory();
+                }
+            });
+        });
+    }
+
+    // --- LÓGICA DE PRODUCTOS FALTANTES (API) ---
+    const addProductForm = document.getElementById('addProductForm')
+addProductForm.addEventListener('submit', async (e) => {   // 👈 async aquí
+  e.preventDefault()
+
+  const productName = document.getElementById('productName').value
+  const supplierName = document.getElementById('supplierName').value
+  if (!productName || !supplierName) return
+
+  try {
+    const res = await fetch('/api.js?action=add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productName, supplierName })
+    })
+    if (!res.ok) throw new Error('Error al añadir producto')
+    showToast('Producto añadido con éxito.')
+    addProductForm.reset()
+    renderMissingProducts()
+  } catch (err) {
+    showToast('Error al añadir producto.', true)
+  }
+});
+
+    async function renderMissingProducts() {
+        const list = document.getElementById('missingProductsList');
+        try {
+            const res = await fetch('/api.js?action=getMissing');
+            const missingProducts = await res.json();
+
+            if (!missingProducts.length) {
+                list.innerHTML = `<div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 text-center text-gray-500">
+                    <p>¡Todo en orden! No hay productos faltantes.</p>
+                </div>`;
+                return;
+            }
+
+            list.innerHTML = '';
+            missingProducts.forEach(product => {
+                const productEl = document.createElement('div');
+                productEl.className = 'bg-white p-4 rounded-lg shadow-md border border-red-200';
+                productEl.innerHTML = `
+                    <div class="flex flex-col md:flex-row justify-between md:items-center">
+                        <div>
+                            <h3 class="font-bold text-lg text-red-600">${product.product_name}</h3>
+                            <p class="text-sm text-gray-500">${product.supplier_name}</p>
+                            <p class="text-xs text-gray-400 mt-1 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                Solicitado el ${new Date(product.requested_at).toLocaleDateString()}
+                            </p>
+                        </div>
+                        <button data-id="${product.id}" class="mark-received-btn mt-4 md:mt-0 bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-green-500 hover:text-white transition-colors">
+                            Marcar como Recibido
+                        </button>
+                    </div>
+                `;
+                list.appendChild(productEl);
+            });
+
+            document.querySelectorAll('.mark-received-btn').forEach(button => {
+                button.addEventListener('click', () => markAsReceived(button.dataset.id));
+            });
+        } catch (err) {
+            list.innerHTML = `<p class="text-red-500 text-center">Error al cargar productos.</p>`;
+        }
+    }
+
+    async function markAsReceived(productId) {
+        try {
+            const res = await fetch('/api.js?action=markReceived', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ id: productId })
+            });
+            if (!res.ok) throw new Error('Error al marcar recibido');
+            showToast('Producto marcado como recibido.');
+            renderMissingProducts();
+            renderHistory();
+        } catch (err) {
+            showToast('Error al marcar recibido.', true);
+        }
+    }
+
+    async function renderHistory() {
+        const list = document.getElementById('historyList');
+        try {
+            const res = await fetch('/api.js?action=getHistory');
+            const history = await res.json();
+
+            if (!history.length) {
+                list.innerHTML = `<div class="text-center py-10 text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+                    <h3 class="mt-2 text-sm font-medium">Aún no hay historial</h3>
+                    <p class="mt-1 text-sm">Cuando recibas un producto, aparecerá aquí.</p>
+                </div>`;
+                return;
+            }
+
+            history.sort((a, b) => new Date(b.received_at) - new Date(a.received_at));
+
+            list.innerHTML = `
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proveedor</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recibido el</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tiempo Resp. (días)</th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-200">
+                    ${history.map(item => `
+                        <tr>
+                          <td class="px-6 py-4 text-sm font-medium text-gray-900">${item.product_name}</td>
+                          <td class="px-6 py-4 text-sm text-gray-500">${item.supplier_name}</td>
+                          <td class="px-6 py-4 text-sm text-gray-500">${new Date(item.received_at).toLocaleDateString()}</td>
+                          <td class="px-6 py-4 text-sm text-gray-500">${item.response_time_days}</td>
+                        </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+            </div>`;
+        } catch (err) {
+            list.innerHTML = `<p class="text-red-500 text-center">Error al cargar historial.</p>`;
+        }
+    }
+
+    async function calculateAndRenderMetrics() {
+        try {
+            const res = await fetch('/api.js?action=getMetrics');
+            const { missingCount, receivedCount, avgDays, supplierCounts } = await res.json();
+
+            document.getElementById('metric-missing').textContent = missingCount;
+            document.getElementById('metric-received').textContent = receivedCount;
+            document.getElementById('metric-avg-time').textContent = `${avgDays} días`;
+
+            renderChart(supplierCounts);
+        } catch (err) {
+            showToast('Error al calcular métricas.', true);
+        }
+    }
+
+    function renderChart(supplierData) {
+        const ctx = document.getElementById('supplierChart').getContext('2d');
+        const labels = Object.keys(supplierData);
+        const data = Object.values(supplierData);
+
+        if (supplierChartInstance) supplierChartInstance.destroy();
+
+        supplierChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Productos Recibidos',
+                    data,
+                    backgroundColor: 'rgba(249, 115, 22, 0.6)',
+                    borderColor: 'rgba(249, 115, 22, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.remove('bg-green-500', 'bg-red-500', 'opacity-0', 'translate-y-10');
+        toast.classList.add(isError ? 'bg-red-500' : 'bg-green-500', 'opacity-100', 'translate-y-0');
+        setTimeout(() => {
+            toast.classList.remove('opacity-100', 'translate-y-0');
+            toast.classList.add('opacity-0', 'translate-y-10');
+        }, 3000);
+    }
+});
+</script>
+
+</body>
+</html>
+
