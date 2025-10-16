@@ -132,10 +132,28 @@
     </div>
 
 
-   <script>
+  <script>
 document.addEventListener('DOMContentLoaded', () => {
 
     let supplierChartInstance = null;
+
+    // 🧠 Funciones auxiliares para cache local (modo offline)
+    function saveToCache(key, data) {
+      localStorage.setItem(key, JSON.stringify({
+        data,
+        timestamp: Date.now()
+      }));
+    }
+
+    function loadFromCache(key, maxAgeMinutes = 5) {
+      const cached = localStorage.getItem(key);
+      if (!cached) return null;
+
+      const parsed = JSON.parse(cached);
+      const ageMinutes = (Date.now() - parsed.timestamp) / (1000 * 60);
+      if (ageMinutes < maxAgeMinutes) return parsed.data;
+      return null;
+    }
 
     const initializeApp = () => {
         setupNavigation();
@@ -170,209 +188,235 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const addProductForm = document.getElementById('addProductForm');
-addProductForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
+    addProductForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-  // 🔠 Forzamos todo a MAYÚSCULAS y limpiamos espacios
-  const productName = document.getElementById('productName').value.trim().toUpperCase();
-  const supplierName = document.getElementById('supplierName').value.trim().toUpperCase();
+      const productName = document.getElementById('productName').value.trim().toUpperCase();
+      const supplierName = document.getElementById('supplierName').value.trim().toUpperCase();
 
-  if (!productName || !supplierName) return;
+      if (!productName || !supplierName) return;
 
-  try {
-    // 🔍 Primero obtenemos la lista actual para evitar duplicados exactos (producto + proveedor)
-    const resMissing = await fetch('/api?action=getMissing');
-    const missingProducts = await resMissing.json();
+      try {
+        const resMissing = await fetch('/api?action=getMissing');
+        const missingProducts = await resMissing.json();
 
-    const alreadyExists = missingProducts.some(p =>
-      p.product_name.toUpperCase() === productName &&
-      p.supplier_name.toUpperCase() === supplierName
-    );
+        const alreadyExists = missingProducts.some(p =>
+          p.product_name.toUpperCase() === productName &&
+          p.supplier_name.toUpperCase() === supplierName
+        );
 
-    if (alreadyExists) {
-      showToast('Ese producto ya está pedido con ese proveedor.', true);
-      return;
-    }
+        if (alreadyExists) {
+          showToast('Ese producto ya está pedido con ese proveedor.', true);
+          return;
+        }
 
-    // ✅ Si no existe, lo agregamos
-    const res = await fetch('/api?action=add', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ productName, supplierName })
+        const res = await fetch('/api?action=add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productName, supplierName })
+        });
+
+        if (!res.ok) throw new Error('Error al añadir producto');
+        showToast('Producto añadido con éxito.');
+        addProductForm.reset();
+        renderMissingProducts();
+
+      } catch (err) {
+        showToast('Error al añadir producto.', true);
+      }
     });
 
-    if (!res.ok) throw new Error('Error al añadir producto');
-    showToast('Producto añadido con éxito.');
-    addProductForm.reset();
-    renderMissingProducts();
-
-  } catch (err) {
-    showToast('Error al añadir producto.', true);
-  }
-});
-
-
+    // ✅ renderMissingProducts con cache y mensajes seguros
     async function renderMissingProducts() {
-        const list = document.getElementById('missingProductsList');
-        try {
-            const res = await fetch('/api?action=getMissing');
-            const missingProducts = await res.json();
+      const list = document.getElementById('missingProductsList');
+      list.innerHTML = `<p class="text-gray-400 text-center">Cargando productos...</p>`;
 
-            if (!missingProducts.length) {
-                list.innerHTML = `<div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 text-center text-gray-500">
-                    <p>¡Todo en orden! No hay productos faltantes.</p>
-                </div>`;
-                return;
-            }
+      const cached = loadFromCache('missingProducts');
+      if (cached) {
+        renderList(cached, true);
+      }
 
-            list.innerHTML = '';
-            missingProducts.forEach(product => {
-                const productEl = document.createElement('div');
-                productEl.className = 'bg-white p-4 rounded-lg shadow-md border border-red-200';
-                productEl.innerHTML = `
-                    <div class="flex flex-col md:flex-row justify-between md:items-center">
-                        <div>
-                            <h3 class="font-bold text-lg text-red-600">${product.product_name}</h3>
-                            <p class="text-sm text-gray-500">${product.supplier_name}</p>
-                            <p class="text-xs text-gray-400 mt-1 flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                Solicitado el ${new Date(product.requested_at).toLocaleDateString()}
-                            </p>
-                        </div>
-                        <button data-id="${product.id}" class="mark-received-btn mt-4 md:mt-0 bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-green-500 hover:text-white transition-colors">
-                            Marcar como Recibido
-                        </button>
-                    </div>
-                `;
-                list.appendChild(productEl);
-            });
+      try {
+        const res = await fetch('/api?action=getMissing');
+        if (!res.ok) throw new Error('Error al obtener datos');
+        const missingProducts = await res.json();
 
-            document.querySelectorAll('.mark-received-btn').forEach(button => {
-                button.addEventListener('click', () => markAsReceived(button.dataset.id));
-            });
-        } catch (err) {
-            list.innerHTML = `<p class="text-red-500 text-center">Error al cargar productos.</p>`;
+        renderList(missingProducts);
+        saveToCache('missingProducts', missingProducts);
+      } catch (err) {
+        console.warn('⚠️ No se pudo actualizar desde el servidor:', err);
+        if (!cached) {
+          list.innerHTML = `<p class="text-red-500 text-center">Error al cargar productos y no hay datos guardados.</p>`;
+        } else {
+          showToast('Mostrando datos guardados (sin conexión).', true);
         }
+      }
+
+      function renderList(missingProducts, isCached = false) {
+        if (!missingProducts.length) {
+          list.innerHTML = `<div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 text-center text-gray-500">
+              <p>¡Todo en orden! No hay productos faltantes.</p>
+          </div>`;
+          return;
+        }
+
+        list.innerHTML = '';
+        missingProducts.forEach(product => {
+          const productEl = document.createElement('div');
+          productEl.className = 'bg-white p-4 rounded-lg shadow-md border border-red-200';
+          productEl.innerHTML = `
+            <div class="flex flex-col md:flex-row justify-between md:items-center">
+              <div>
+                <h3 class="font-bold text-lg text-red-600">${product.product_name}</h3>
+                <p class="text-sm text-gray-500">${product.supplier_name}</p>
+                <p class="text-xs text-gray-400 mt-1 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Solicitado el ${new Date(product.requested_at).toLocaleDateString()}
+                </p>
+              </div>
+              <button data-id="${product.id}" class="mark-received-btn mt-4 md:mt-0 bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-green-500 hover:text-white transition-colors">
+                Marcar como Recibido
+              </button>
+            </div>
+          `;
+          list.appendChild(productEl);
+        });
+
+        if (isCached) {
+          const note = document.createElement('p');
+          note.className = 'text-xs text-yellow-600 text-center mt-2';
+          note.textContent = '⏳ Mostrando datos guardados (pendiente de actualización)';
+          list.appendChild(note);
+        }
+
+        document.querySelectorAll('.mark-received-btn').forEach(button => {
+          button.addEventListener('click', () => markAsReceived(button.dataset.id));
+        });
+      }
     }
 
     async function markAsReceived(productId) {
-        try {
-            const res = await fetch('/api?action=markReceived', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ id: productId })
-            });
-            if (!res.ok) throw new Error('Error al marcar recibido');
-            showToast('Producto marcado como recibido.');
-            renderMissingProducts();
-            renderHistory();
-        } catch (err) {
-            showToast('Error al marcar recibido.', true);
-        }
+      try {
+        const res = await fetch('/api?action=markReceived', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ id: productId })
+        });
+        if (!res.ok) throw new Error('Error al marcar recibido');
+        showToast('Producto marcado como recibido.');
+        renderMissingProducts();
+        renderHistory();
+      } catch (err) {
+        showToast('Error al marcar recibido.', true);
+      }
     }
 
     async function renderHistory() {
-        const list = document.getElementById('historyList');
-        try {
-            const res = await fetch('/api?action=getHistory');
-            const history = await res.json();
+      const list = document.getElementById('historyList');
+      try {
+        const res = await fetch('/api?action=getHistory');
+        const history = await res.json();
 
-            if (!history.length) {
-                list.innerHTML = `<div class="text-center py-10 text-gray-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
-                    <h3 class="mt-2 text-sm font-medium">Aún no hay historial</h3>
-                    <p class="mt-1 text-sm">Cuando recibas un producto, aparecerá aquí.</p>
-                </div>`;
-                return;
-            }
-
-            history.sort((a, b) => new Date(b.received_at) - new Date(a.received_at));
-
-            list.innerHTML = `
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                  <thead class="bg-gray-50">
-                    <tr>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proveedor</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recibido el</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tiempo Resp. (días)</th>
-                    </tr>
-                  </thead>
-                  <tbody class="bg-white divide-y divide-gray-200">
-                    ${history.map(item => `
-                        <tr>
-                          <td class="px-6 py-4 text-sm font-medium text-gray-900">${item.product_name}</td>
-                          <td class="px-6 py-4 text-sm text-gray-500">${item.supplier_name}</td>
-                          <td class="px-6 py-4 text-sm text-gray-500">${new Date(item.received_at).toLocaleDateString()}</td>
-                          <td class="px-6 py-4 text-sm text-gray-500">${item.response_time_days}</td>
-                        </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
-            </div>`;
-        } catch (err) {
-            list.innerHTML = `<p class="text-red-500 text-center">Error al cargar historial.</p>`;
+        if (!history.length) {
+          list.innerHTML = `<div class="text-center py-10 text-gray-500">
+              <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+              <h3 class="mt-2 text-sm font-medium">Aún no hay historial</h3>
+              <p class="mt-1 text-sm">Cuando recibas un producto, aparecerá aquí.</p>
+          </div>`;
+          return;
         }
+
+        history.sort((a, b) => new Date(b.received_at) - new Date(a.received_at));
+
+        list.innerHTML = `
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proveedor</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recibido el</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tiempo Resp. (días)</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                ${history.map(item => `
+                    <tr>
+                      <td class="px-6 py-4 text-sm font-medium text-gray-900">${item.product_name}</td>
+                      <td class="px-6 py-4 text-sm text-gray-500">${item.supplier_name}</td>
+                      <td class="px-6 py-4 text-sm text-gray-500">${new Date(item.received_at).toLocaleDateString()}</td>
+                      <td class="px-6 py-4 text-sm text-gray-500">${item.response_time_days}</td>
+                    </tr>
+                `).join('')}
+              </tbody>
+            </table>
+        </div>`;
+      } catch (err) {
+        list.innerHTML = `<p class="text-red-500 text-center">Error al cargar historial.</p>`;
+      }
     }
 
     async function calculateAndRenderMetrics() {
-        try {
-            const res = await fetch('/api?action=getMetrics');
-            const { missingCount, receivedCount, avgDays, supplierCounts } = await res.json();
+      try {
+        const res = await fetch('/api?action=getMetrics');
+        const { missingCount, receivedCount, avgDays, supplierCounts } = await res.json();
 
-            document.getElementById('metric-missing').textContent = missingCount;
-            document.getElementById('metric-received').textContent = receivedCount;
-            document.getElementById('metric-avg-time').textContent = `${avgDays} días`;
+        document.getElementById('metric-missing').textContent = missingCount;
+        document.getElementById('metric-received').textContent = receivedCount;
+        document.getElementById('metric-avg-time').textContent = `${avgDays} días`;
 
-            renderChart(supplierCounts);
-        } catch (err) {
-            showToast('Error al calcular métricas.', true);
-        }
+        renderChart(supplierCounts);
+      } catch (err) {
+        showToast('Error al calcular métricas.', true);
+      }
     }
 
     function renderChart(supplierData) {
-        const ctx = document.getElementById('supplierChart').getContext('2d');
-        const labels = Object.keys(supplierData);
-        const data = Object.values(supplierData);
+      const ctx = document.getElementById('supplierChart').getContext('2d');
+      const labels = Object.keys(supplierData);
+      const data = Object.values(supplierData);
 
-        if (supplierChartInstance) supplierChartInstance.destroy();
+      if (supplierChartInstance) supplierChartInstance.destroy();
 
-        supplierChartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels,
-                datasets: [{
-                    label: 'Productos Recibidos',
-                    data,
-                    backgroundColor: 'rgba(249, 115, 22, 0.6)',
-                    borderColor: 'rgba(249, 115, 22, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
+      supplierChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Productos Recibidos',
+            data,
+            backgroundColor: 'rgba(249, 115, 22, 0.6)',
+            borderColor: 'rgba(249, 115, 22, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+          responsive: true,
+          maintainAspectRatio: false
+        }
+      });
     }
 
     function showToast(message, isError = false) {
-        const toast = document.getElementById('toast');
-        toast.textContent = message;
-        toast.classList.remove('bg-green-500', 'bg-red-500', 'opacity-0', 'translate-y-10');
-        toast.classList.add(isError ? 'bg-red-500' : 'bg-green-500', 'opacity-100', 'translate-y-0');
-        setTimeout(() => {
-            toast.classList.remove('opacity-100', 'translate-y-0');
-            toast.classList.add('opacity-0', 'translate-y-10');
-        }, 3000);
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.remove('bg-green-500', 'bg-red-500', 'opacity-0', 'translate-y-10');
+      toast.classList.add(isError ? 'bg-red-500' : 'bg-green-500', 'opacity-100', 'translate-y-0');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'translate-y-10');
+      }, 3000);
     }
 });
 </script>
 
+
 </body>
 </html>
+
 
 
 
