@@ -366,43 +366,56 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 🔄 Sincroniza productos guardados offline
-  async function syncPendingAdds() {
-    const pending = JSON.parse(localStorage.getItem('pendingAdds') || '[]');
-    if (!pending.length || !navigator.onLine) return;
+ // 🔄 Sincroniza productos guardados offline con validación de duplicados
+async function syncPendingAdds() {
+  const pending = JSON.parse(localStorage.getItem('pendingAdds') || '[]');
+  if (!pending.length || !navigator.onLine) return;
+
+  try {
+    // 🔍 Obtener lista actual desde el servidor
+    const resMissing = await fetch('/api?action=getMissing');
+    const missingProducts = await resMissing.json();
+
+    let sentCount = 0;
     for (const item of pending) {
-      try {
+      const exists = missingProducts.some(p =>
+        p.product_name.toUpperCase() === item.productName.toUpperCase() &&
+        p.supplier_name.toUpperCase() === item.supplierName.toUpperCase()
+      );
+
+      if (!exists) {
         await fetch('/api?action=add', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(item)
         });
-        console.log('✔️ Sincronizado:', item);
-      } catch (err) {
-        console.warn('⚠️ No se pudo sincronizar:', item);
+        sentCount++;
+      } else {
+        console.log(`⚠️ Producto duplicado omitido: ${item.productName} - ${item.supplierName}`);
       }
     }
-    localStorage.removeItem('pendingAdds');
-    showToast('✔️ Productos pendientes sincronizados.');
-    renderMissingProducts();
-  }
 
-  function showToast(message, isError = false) {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.classList.remove('bg-green-500','bg-red-500','opacity-0','translate-y-10');
-    toast.classList.add(isError ? 'bg-red-500':'bg-green-500','opacity-100','translate-y-0');
-    setTimeout(() => {
-      toast.classList.remove('opacity-100','translate-y-0');
-      toast.classList.add('opacity-0','translate-y-10');
-    }, 3000);
+    localStorage.removeItem('pendingAdds');
+    if (sentCount > 0) {
+      showToast(`✔️ ${sentCount} producto(s) sincronizado(s).`);
+      renderMissingProducts();
+    } else {
+      showToast('⚠️ No se sincronizó nada (ya estaban registrados).', true);
+    }
+
+  } catch (err) {
+    console.error('❌ Error al sincronizar pendientes:', err);
+    showToast('Error al sincronizar productos pendientes.', true);
   }
+}
+
 });
 </script>
 
 
 </body>
 </html>
+
 
 
 
