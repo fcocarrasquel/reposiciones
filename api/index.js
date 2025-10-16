@@ -16,7 +16,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 export default async function handler(req, res) {
   try {
     const { action } = req.query
-    const body = req.body ? JSON.parse(req.body) : {}
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {}
 
     console.log('🔹 Acción recibida:', action)
 
@@ -144,5 +144,6 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message })
   }
 }
+
 
 
