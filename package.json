@@ -1,21 +1,8 @@
 {
-  "name": "sistema-reposiciones",
-  "version": "1.0.0",
-  "description": "Sistema de gestión de productos faltantes para tienda",
   "type": "module",
-  "scripts": {
-    "dev": "npx http-server -p 5501",
-    "build": "echo 'No build step required for static site'",
-    "start": "npx http-server -p 5501"
-  },
   "dependencies": {
-    "@supabase/supabase-js": "^2.38.0"
-  },
-  "devDependencies": {
-    "http-server": "^14.1.1"
-  },
-  "engines": {
-    "node": "18.x"
+    "@supabase/supabase-js": "^2.39.3"
   }
 }
+
 
