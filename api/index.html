@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Productos Faltantes</title>
+    <!-- Tailwind CSS para desarrollo (CDN) -->
+    <!-- Para producción, instalar Tailwind localmente: npm install -D tailwindcss -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+    <!-- API Client para Vercel (reemplaza Supabase directo) -->
+    <script src="js/api.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .sidebar-link.active {
+            background-color: #fff;
+            color: #f97316;
+            font-weight: 600;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .loading-text {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-16 md:w-64 bg-white border-r flex flex-col">
+            <div class="border-b p-4">
+                <h1 class="text-xl font-bold text-orange-500 hidden md:block">Productos por Reposición</h1>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-orange-500 md:hidden mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+            </div>
+            <nav class="flex-1 p-2 space-y-2">
+                <a href="#productos" id="nav-productos" class="sidebar-link flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M20 13V7a2 2 0 00-2-2h-4V3H10v2H6a2 2 0 00-2 2v6m16 0v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6m16 0H4" />
+                  </svg>
+                  <span class="ml-4 hidden md:block">Productos Faltantes</span>
+                </a>
+
+                <a href="#historial" id="nav-historial" class="sidebar-link flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span class="ml-4 hidden md:block">Historial</span>
+                </a>
+                <a href="#metricas" id="nav-metricas" class="sidebar-link flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                    <span class="ml-4 hidden md:block">Métricas</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 md:p-8 overflow-y-auto">
+            
+            <!-- Vista: Productos Faltantes -->
+            <div id="view-productos" class="page-view">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-1">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h2 class="text-xl font-bold mb-4">Añadir Producto Faltante</h2>
+                            <form id="addProductForm" class="space-y-4">
+                                <div>
+                                    <label for="productName" class="block text-sm font-medium text-gray-700">Nombre del Producto</label>
+                                    <input type="text" id="productName" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500"style="text-transform: uppercase;">
+                                </div>
+                                <div>
+                                    <label for="supplierName" class="block text-sm font-medium text-gray-700">Proveedor</label>
+                                    <input type="text" id="supplierName" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500"style="text-transform: uppercase;">
+                                </div>
+                                <div>
+                                    <label for="priority" class="block text-sm font-medium text-gray-700">Prioridad</label>
+                                    <select id="priority" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                        <option value="media">Media</option>
+                                        <option value="alta">Alta</option>
+                                        <option value="baja">Baja</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="w-full bg-orange-500 text-white font-bold py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors">Añadir Producto</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2">
+                         <h2 class="text-xl font-bold mb-4">Productos Faltantes Actuales</h2>
+                         <p class="text-gray-500 mb-4">Una lista de productos que están actualmente fuera de stock.</p>
+                         
+                         <!-- 🔍 SISTEMA DE BÚSQUEDA Y FILTROS AVANZADOS -->
+                         <div class="bg-white p-4 rounded-lg shadow-md mb-6 border border-gray-200">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                               <!-- Búsqueda por Producto -->
+                               <div>
+                                  <label class="block text-sm font-medium text-gray-700 mb-1">Buscar Producto</label>
+                                  <input type="text" id="searchProduct" placeholder="Nombre del producto..."
+                                         class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                               </div>
+                               
+                               <!-- Filtro por Proveedor -->
+                               <div>
+                                  <label class="block text-sm font-medium text-gray-700 mb-1">Filtrar por Proveedor</label>
+                                  <select id="filterSupplier" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                     <option value="">Todos los proveedores</option>
+                                     <!-- Proveedores se cargarán dinámicamente -->
+                                  </select>
+                               </div>
+                               
+                               <!-- Filtro por Prioridad -->
+                               <div>
+                                  <label class="block text-sm font-medium text-gray-700 mb-1">Filtrar por Prioridad</label>
+                                  <select id="filterPriority" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                     <option value="">Todas las prioridades</option>
+                                     <option value="alta">Alta</option>
+                                     <option value="media">Media</option>
+                                     <option value="baja">Baja</option>
+                                  </select>
+                               </div>
+                               
+                               <!-- Filtro por Fecha -->
+                               <div>
+                                  <label class="block text-sm font-medium text-gray-700 mb-1">Ordenar por</label>
+                                  <select id="sortBy" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                     <option value="recent">Más recientes primero</option>
+                                     <option value="oldest">Más antiguos primero</option>
+                                     <option value="product">Nombre del producto (A-Z)</option>
+                                     <option value="supplier">Proveedor (A-Z)</option>
+                                     <option value="priority">Prioridad (Alta → Baja)</option>
+                                  </select>
+                               </div>
+                            </div>
+                            
+                            <!-- Indicadores de filtros activos -->
+                            <div id="activeFilters" class="flex flex-wrap gap-2 mb-2 hidden">
+                               <span class="text-sm text-gray-600">Filtros activos:</span>
+                            </div>
+                            
+                            <!-- Contador de resultados -->
+                            <div id="resultsCounter" class="text-sm text-gray-500 mb-2">
+                               Mostrando <span id="resultsCount">0</span> de <span id="totalCount">0</span> productos
+                            </div>
+                            
+                            <!-- Botones de acción -->
+                            <div class="flex gap-2">
+                               <button id="clearFilters" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300 transition-colors">
+                                  Limpiar filtros
+                               </button>
+                               <button id="applyFilters" class="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors">
+                                  Aplicar filtros
+                               </button>
+                               <button id="exportPDF" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors">
+                                  Exportar PDF
+                               </button>
+                               <button id="sendWhatsApp" class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600 transition-colors">
+                                  Enviar WhatsApp
+                               </button>
+                            </div>
+                         </div>
+                         
+                         <div id="missingProductsList" class="space-y-4">
+                            <!-- Los productos se insertarán aquí dinámicamente -->
+                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vista: Historial -->
+            <div id="view-historial" class="page-view hidden">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-bold mb-4">Historial de Productos</h2>
+                    <p class="text-gray-500 mb-6">Un registro de todos los productos previamente faltantes que han sido reabastecidos.</p>
+                    <div id="historyList">
+                        <!-- El historial se insertará aquí -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vista: Métricas -->
+            <div id="view-metricas" class="page-view hidden">
+                <h2 class="text-2xl font-bold mb-6">Métricas de Inventario</h2>
+                <p class="text-gray-500 mb-6">Visualiza métricas clave sobre tu inventario de productos.</p>
+                <!-- Stat Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                        <h3 class="text-gray-500 font-medium">Productos Faltantes Actuales</h3>
+                        <p id="metric-missing" class="text-4xl font-bold text-red-500 mt-2">0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                        <h3 class="text-gray-500 font-medium">Productos Recibidos (Historial)</h3>
+                        <p id="metric-received" class="text-4xl font-bold text-green-500 mt-2">0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                        <h3 class="text-gray-500 font-medium">Tiempo Promedio de Respuesta</h3>
+                        <p id="metric-avg-time" class="text-4xl font-bold text-blue-500 mt-2">0 días</p>
+                    </div>
+                </div>
+                <!-- Chart -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="font-bold mb-4">Productos por Proveedor (del Historial)</h3>
+                    <div class="relative h-96">
+                        <canvas id="supplierChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-5 rounded-lg shadow-xl opacity-0 translate-y-10 transition-all duration-300">
+        <p>¡Acción completada con éxito!</p>
+    </div>
+
+    <!-- Modal de Confirmación Personalizado -->
+    <div id="confirmationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-95 opacity-0">
+            <div class="p-6">
+                <div id="modalIcon" class="text-4xl mb-4 text-center">🎉</div>
+                <h3 id="modalTitle" class="text-xl font-bold text-gray-800 mb-2 text-center"></h3>
+                <p id="modalMessage" class="text-gray-600 mb-6 text-center"></p>
+                <div class="flex gap-3 justify-center">
+                    <button id="modalCancel" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors">
+                        Cancelar
+                    </button>
+                    <button id="modalConfirm" class="bg-orange-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-orange-600 transition-colors">
+                        Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+<!-- API Client ya está cargado en js/api.js -->
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+
+  let supplierChartInstance = null;
+  let allMissingProducts = []; // Almacena todos los productos para filtrado
+  let allSuppliers = []; // Almacena lista de proveedores únicos
+  const addProductForm = document.getElementById('addProductForm');
+
+  // 🔍 SISTEMA DE BÚSQUEDA Y FILTROS
+  const initializeSearchSystem = () => {
+    setupSearchEventListeners();
+    loadSuppliersList();
+  };
+
+  const setupSearchEventListeners = () => {
+    // Búsqueda en tiempo real
+    document.getElementById('searchProduct').addEventListener('input', applyFilters);
+    document.getElementById('filterSupplier').addEventListener('change', applyFilters);
+    document.getElementById('sortBy').addEventListener('change', applyFilters);
+    
+    // Botones de acción
+    document.getElementById('clearFilters').addEventListener('click', clearAllFilters);
+    document.getElementById('applyFilters').addEventListener('click', applyFilters);
+    document.getElementById('exportPDF').addEventListener('click', exportToPDF);
+    document.getElementById('sendWhatsApp').addEventListener('click', sendToWhatsApp);
+  };
+
+  const loadSuppliersList = async () => {
+    try {
+      // Usar API client en lugar de Supabase directo
+      const data = await window.apiClient.getMissingProducts();
+      
+      // Extraer proveedores únicos
+      const uniqueSuppliers = [...new Set(data.map(p => p.supplier_name))].sort();
+      allSuppliers = uniqueSuppliers;
+      
+      // Llenar dropdown de proveedores
+      const supplierSelect = document.getElementById('filterSupplier');
+      supplierSelect.innerHTML = '<option value="">Todos los proveedores</option>';
+      uniqueSuppliers.forEach(supplier => {
+        const option = document.createElement('option');
+        option.value = supplier;
+        option.textContent = supplier;
+        supplierSelect.appendChild(option);
+      });
+      
+    } catch (error) {
+      showToast('Error al cargar proveedores: ' + error.message, true);
+    }
+  };
+
+  const applyFilters = () => {
+    if (!allMissingProducts.length) return;
+    
+    const searchTerm = document.getElementById('searchProduct').value.toLowerCase().trim();
+    const selectedSupplier = document.getElementById('filterSupplier').value;
+    const selectedPriority = document.getElementById('filterPriority').value;
+    const sortBy = document.getElementById('sortBy').value;
+    
+    // Aplicar filtros
+    let filteredProducts = allMissingProducts.filter(product => {
+      const matchesSearch = !searchTerm ||
+        product.product_name.toLowerCase().includes(searchTerm) ||
+        product.supplier_name.toLowerCase().includes(searchTerm);
+      
+      const matchesSupplier = !selectedSupplier || product.supplier_name === selectedSupplier;
+      const matchesPriority = !selectedPriority || product.priority === selectedPriority;
+      
+      return matchesSearch && matchesSupplier && matchesPriority;
+    });
+    
+    // Aplicar ordenamiento
+    filteredProducts = sortProducts(filteredProducts, sortBy);
+    
+    // Actualizar contadores
+    updateResultsCounter(filteredProducts.length, allMissingProducts.length);
+    
+    // Actualizar indicadores de filtros activos
+    updateActiveFilters(searchTerm, selectedSupplier, selectedPriority);
+    
+    // Renderizar productos filtrados
+    renderFilteredProducts(filteredProducts);
+  };
+
+  const sortProducts = (products, sortBy) => {
+    return [...products].sort((a, b) => {
+      switch (sortBy) {
+        case 'recent':
+          return new Date(b.requested_at) - new Date(a.requested_at);
+        case 'oldest':
+          return new Date(a.requested_at) - new Date(b.requested_at);
+        case 'product':
+          return a.product_name.localeCompare(b.product_name);
+        case 'supplier':
+          return a.supplier_name.localeCompare(b.supplier_name);
+        case 'priority':
+          const priorityOrder = { 'alta': 3, 'media': 2, 'baja': 1 };
+          return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
+        default:
+          return 0;
+      }
+    });
+  };
+
+  const updateResultsCounter = (filteredCount, totalCount) => {
+    document.getElementById('resultsCount').textContent = filteredCount;
+    document.getElementById('totalCount').textContent = totalCount;
+  };
+
+  const updateActiveFilters = (searchTerm, selectedSupplier, selectedPriority) => {
+    const activeFiltersContainer = document.getElementById('activeFilters');
+    activeFiltersContainer.innerHTML = '<span class="text-sm text-gray-600">Filtros activos:</span>';
+    
+    const filters = [];
+    
+    if (searchTerm) {
+      filters.push(`Búsqueda: "${searchTerm}"`);
+    }
+    
+    if (selectedSupplier) {
+      filters.push(`Proveedor: ${selectedSupplier}`);
+    }
+    
+    if (selectedPriority) {
+      filters.push(`Prioridad: ${selectedPriority}`);
+    }
+    
+    if (filters.length > 0) {
+      filters.forEach(filter => {
+        const chip = document.createElement('span');
+        chip.className = 'bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full';
+        chip.textContent = filter;
+        activeFiltersContainer.appendChild(chip);
+      });
+      activeFiltersContainer.classList.remove('hidden');
+    } else {
+      activeFiltersContainer.classList.add('hidden');
+    }
+  };
+
+  const clearAllFilters = () => {
+    document.getElementById('searchProduct').value = '';
+    document.getElementById('filterSupplier').value = '';
+    document.getElementById('filterPriority').value = '';
+    document.getElementById('sortBy').value = 'recent';
+    applyFilters();
+  };
+
+  const renderFilteredProducts = (filteredProducts) => {
+    const list = document.getElementById('missingProductsList');
+    
+    if (!filteredProducts.length) {
+      list.innerHTML = `<div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 text-center text-gray-500">
+          <p>No se encontraron productos con los filtros aplicados.</p>
+          <button onclick="clearAllFilters()" class="mt-2 text-orange-500 hover:underline">Limpiar filtros</button>
+        </div>`;
+      return;
+    }
+    
+    list.innerHTML = '';
+    filteredProducts.forEach(product => {
+      const productEl = document.createElement('div');
+      productEl.className = 'bg-white p-4 rounded-lg shadow-md border border-red-200';
+      
+      // Determinar color de prioridad
+      let priorityColor = 'bg-gray-200 text-gray-800';
+      let priorityText = 'Media';
+      if (product.priority === 'alta') {
+        priorityColor = 'bg-red-100 text-red-800';
+        priorityText = 'Alta';
+      } else if (product.priority === 'baja') {
+        priorityColor = 'bg-green-100 text-green-800';
+        priorityText = 'Baja';
+      }
+      
+      productEl.innerHTML = `
+        <div class="flex flex-col md:flex-row justify-between md:items-center">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <h3 class="font-bold text-lg text-red-600">${product.product_name}</h3>
+              <span class="${priorityColor} text-xs px-2 py-1 rounded-full font-medium">${priorityText}</span>
+            </div>
+            <p class="text-sm text-gray-500">${product.supplier_name}</p>
+            <p class="text-xs text-gray-400 mt-1 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Solicitado el ${new Date(product.requested_at).toLocaleDateString()}
+            </p>
+          </div>
+          <div class="flex gap-2 mt-4 md:mt-0">
+            <button data-id="${product.id}" class="mark-received-btn bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-green-500 hover:text-white transition-colors">
+              Marcar Recibido
+            </button>
+            <button data-id="${product.id}" class="delete-product-btn bg-red-200 text-red-700 font-semibold py-2 px-4 rounded-md hover:bg-red-500 hover:text-white transition-colors">
+              Eliminar
+            </button>
+          </div>
+        </div>`;
+      list.appendChild(productEl);
+    });
+    
+    // Re-conectar eventos de botones
+    document.querySelectorAll('.mark-received-btn').forEach(button => {
+      button.addEventListener('click', () => confirmMarkAsReceived(button.dataset.id));
+    });
+    
+    document.querySelectorAll('.delete-product-btn').forEach(button => {
+      button.addEventListener('click', () => confirmDeleteProduct(button.dataset.id));
+    });
+  };
+
+  // 🔄 FUNCIONES EXISTENTES MODIFICADAS PARA INTEGRAR FILTROS
+  const initializeApp = () => {
+    setupNavigation();
+    initializeSearchSystem(); // Inicializar sistema de búsqueda
+    setupFormValidation(); // Inicializar validación de formularios
+    renderMissingProducts();
+    renderHistory();
+    document.getElementById('nav-productos').click();
+  };
+  initializeApp();
+
+  function setupNavigation() {
+    const links = document.querySelectorAll('.sidebar-link');
+    const views = document.querySelectorAll('.page-view');
+
+    links.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetId = link.getAttribute('href').substring(1);
+        views.forEach(view => view.classList.add('hidden'));
+        links.forEach(l => l.classList.remove('active'));
+        document.getElementById(`view-${targetId}`).classList.remove('hidden');
+        link.classList.add('active');
+        if (targetId === 'metricas') calculateAndRenderMetrics();
+        else if (targetId === 'historial') renderHistory();
+      });
+    });
+  }
+
+  // 🔍 VALIDACIÓN DE FORMULARIOS
+  function setupFormValidation() {
+    const productNameInput = document.getElementById('productName');
+    const supplierNameInput = document.getElementById('supplierName');
+    const submitButton = addProductForm.querySelector('button[type="submit"]');
+    
+    function validateForm() {
+      const productName = productNameInput.value.trim();
+      const supplierName = supplierNameInput.value.trim();
+      const isValid = productName.length > 0 && supplierName.length > 0;
+      
+      submitButton.disabled = !isValid;
+      submitButton.classList.toggle('opacity-50', !isValid);
+      submitButton.classList.toggle('cursor-not-allowed', !isValid);
+      
+      return isValid;
+    }
+    
+    // Validación en tiempo real
+    productNameInput.addEventListener('input', validateForm);
+    supplierNameInput.addEventListener('input', validateForm);
+    
+    // Validación inicial
+    validateForm();
+  }
+  addProductForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const productName = document.getElementById('productName').value.trim().toUpperCase();
+    const supplierName = document.getElementById('supplierName').value.trim().toUpperCase();
+    const priority = document.getElementById('priority').value;
+    
+    // Validación final
+    if (!productName || !supplierName || !priority) {
+      showToast('Por favor completa todos los campos requeridos.', true);
+      return;
+    }
+    
+    // Validar longitud mínima
+    if (productName.length < 2) {
+      showToast('El nombre del producto debe tener al menos 2 caracteres.', true);
+      return;
+    }
+    
+    if (supplierName.length < 2) {
+      showToast('El nombre del proveedor debe tener al menos 2 caracteres.', true);
+      return;
+    }
+
+    try {
+      // Usar API client en lugar de Supabase directo
+      await window.apiClient.addProduct({
+        product_name: productName,
+        supplier_name: supplierName,
+        priority: priority
+      });
+
+      showToast('Producto añadido con éxito.');
+      addProductForm.reset();
+      renderMissingProducts();
+
+    } catch (err) {
+      showToast('Error al añadir producto: ' + err.message, true);
+    }
+  });
+
+  async function renderMissingProducts() {
+    const list = document.getElementById('missingProductsList');
+    list.innerHTML = `<p class="text-gray-400 text-center">Cargando productos...</p>`;
+
+    try {
+      // Usar API client en lugar de Supabase directo
+      const data = await window.apiClient.getMissingProducts();
+      
+      // Guardar productos en variable global para filtrado
+      allMissingProducts = data || [];
+      
+      // Actualizar lista de proveedores
+      loadSuppliersList();
+      
+      // Aplicar filtros actuales o mostrar todos
+      applyFilters();
+      
+    } catch (error) {
+      list.innerHTML = `
+        <div class="bg-white p-6 rounded-lg shadow-md border border-red-200 text-center text-red-500">
+          <h3 class="font-bold text-lg mb-2">❌ Error de Conexión</h3>
+          <p class="mb-4">${error.message}</p>
+          <p class="text-sm text-gray-600">
+            Error al conectar con la API. Verifica que el servidor esté funcionando.
+          </p>
+        </div>`;
+    }
+  }
+
+  async function markAsReceived(productId) {
+    try {
+      // Usar API client en lugar de Supabase directo
+      await window.apiClient.markAsReceived(productId);
+
+      showToast('Producto marcado como recibido.');
+      renderMissingProducts();
+      renderHistory();
+      calculateAndRenderMetrics(); // Actualizar métricas también
+    } catch (error) {
+      showToast('Error al marcar recibido: ' + error.message, true);
+    }
+  }
+
+  async function renderHistory() {
+    const list = document.getElementById('historyList');
+    try {
+      // Usar API client en lugar de Supabase directo
+      const history = await window.apiClient.getHistory();
+
+      if (!history.length) {
+        list.innerHTML = `<div class="text-center py-10 text-gray-500">
+          <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+          <h3 class="mt-2 text-sm font-medium">Aún no hay historial</h3>
+          <p class="mt-1 text-sm">Cuando recibas un producto, aparecerá aquí.</p>
+        </div>`;
+        return;
+      }
+
+      history.sort((a, b) => new Date(b.received_at) - new Date(a.received_at));
+      list.innerHTML = `<div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50"><tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proveedor</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recibido el</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tiempo Resp. (días)</th>
+          </tr></thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            ${history.map(item => `
+              <tr>
+                <td class="px-6 py-4 text-sm font-medium text-gray-900">${item.product_name}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">${item.supplier_name}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">${new Date(item.received_at).toLocaleDateString()}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">${item.response_time_days || 0}</td>
+              </tr>`).join('')}
+          </tbody></table></div>`;
+    } catch (error) {
+      list.innerHTML = `<p class="text-red-500 text-center">Error al cargar historial: ${error.message}</p>`;
+    }
+  }
+
+  async function calculateAndRenderMetrics() {
+    try {
+      // Usar API client en lugar de Supabase directo
+      const metrics = await window.apiClient.getMetrics();
+      
+      // Actualizar UI - usar nombres de propiedades de tu API original
+      document.getElementById('metric-missing').textContent = metrics.missingCount;
+      document.getElementById('metric-received').textContent = metrics.receivedCount;
+      document.getElementById('metric-avg-time').textContent = `${metrics.avgDays} días`;
+      renderChart(metrics.supplierCounts);
+      
+    } catch (error) {
+      showToast('Error al calcular métricas: ' + error.message, true);
+    }
+  }
+
+  function renderChart(supplierData) {
+    const ctx = document.getElementById('supplierChart').getContext('2d');
+    const labels = Object.keys(supplierData);
+    const data = Object.values(supplierData);
+    if (supplierChartInstance) supplierChartInstance.destroy();
+    supplierChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Productos Recibidos', data,
+        backgroundColor: 'rgba(249,115,22,0.6)', borderColor: 'rgba(249,115,22,1)', borderWidth: 1 }] },
+      options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, responsive: true, maintainAspectRatio: false }
+    });
+  }
+
+  // 📱 FUNCIÓN DE ENVÍO POR WHATSAPP
+  function sendToWhatsApp() {
+    const selectedSupplier = document.getElementById('filterSupplier').value;
+    
+    if (!selectedSupplier) {
+      showToast('Primero selecciona un proveedor para enviar por WhatsApp.', true);
+      return;
+    }
+    
+    // Filtrar productos del proveedor seleccionado
+    const supplierProducts = allMissingProducts.filter(p => p.supplier_name === selectedSupplier);
+    
+    if (supplierProducts.length === 0) {
+      showToast(`No hay productos para el proveedor "${selectedSupplier}".`, true);
+      return;
+    }
+    
+    // Crear mensaje para WhatsApp
+    const now = new Date();
+    const dateStr = now.toLocaleDateString();
+    
+    let message = `📋 *LISTA DE PRODUCTOS FALTANTES*\n`;
+    message += `👨‍💼 *Proveedor:* ${selectedSupplier}\n`;
+    message += `📅 *Fecha:* ${dateStr}\n\n`;
+    message += `*PRODUCTOS SOLICITADOS:*\n\n`;
+    
+    // Agrupar por prioridad
+    const highPriority = supplierProducts.filter(p => p.priority === 'alta');
+    const mediumPriority = supplierProducts.filter(p => p.priority === 'media');
+    const lowPriority = supplierProducts.filter(p => p.priority === 'baja');
+    
+    // Agregar productos de alta prioridad
+    if (highPriority.length > 0) {
+      message += `🚨 *ALTA PRIORIDAD*\n`;
+      highPriority.forEach((product, index) => {
+        message += `${index + 1}. ${product.product_name}\n`;
+      });
+      message += `\n`;
+    }
+    
+    // Agregar productos de prioridad media
+    if (mediumPriority.length > 0) {
+      message += `⚠️ *PRIORIDAD MEDIA*\n`;
+      mediumPriority.forEach((product, index) => {
+        message += `${index + 1}. ${product.product_name}\n`;
+      });
+      message += `\n`;
+    }
+    
+    // Agregar productos de baja prioridad
+    if (lowPriority.length > 0) {
+      message += `✅ *BAJA PRIORIDAD*\n`;
+      lowPriority.forEach((product, index) => {
+        message += `${index + 1}. ${product.product_name}\n`;
+      });
+      message += `\n`;
+    }
+    
+    // Resumen
+    message += `📊 *RESUMEN:*\n`;
+    message += `• Alta prioridad: ${highPriority.length} productos\n`;
+    message += `• Prioridad media: ${mediumPriority.length} productos\n`;
+    message += `• Baja prioridad: ${lowPriority.length} productos\n`;
+    message += `• Total: ${supplierProducts.length} productos\n\n`;
+    message += `Por favor confirmar disponibilidad y fecha de entrega.`;
+    
+    // Codificar mensaje para URL
+    const encodedMessage = encodeURIComponent(message);
+    
+    // Crear URL de WhatsApp
+    const whatsappUrl = `https://web.whatsapp.com/send?text=${encodedMessage}`;
+    
+    // Abrir WhatsApp Web en nueva pestaña
+    window.open(whatsappUrl, '_blank');
+    
+    showToast(`Mensaje preparado para ${selectedSupplier}. Abre WhatsApp Web para enviar.`);
+  }
+
+  // 📄 FUNCIÓN DE EXPORTACIÓN A PDF
+  function exportToPDF() {
+    const selectedSupplier = document.getElementById('filterSupplier').value;
+    const selectedPriority = document.getElementById('filterPriority').value;
+    
+    // Filtrar productos según los filtros actuales
+    let productsToExport = allMissingProducts;
+    
+    if (selectedSupplier) {
+      productsToExport = productsToExport.filter(p => p.supplier_name === selectedSupplier);
+    }
+    
+    if (selectedPriority) {
+      productsToExport = productsToExport.filter(p => p.priority === selectedPriority);
+    }
+    
+    if (productsToExport.length === 0) {
+      showToast('No hay productos para exportar con los filtros actuales.', true);
+      return;
+    }
+    
+    // Crear contenido HTML para el PDF
+    const now = new Date();
+    const dateStr = now.toLocaleDateString();
+    const timeStr = now.toLocaleTimeString();
+    
+    let htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Lista de Productos Faltantes</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+          .title { font-size: 24px; font-weight: bold; color: #f97316; margin-bottom: 5px; }
+          .subtitle { font-size: 14px; color: #666; margin-bottom: 10px; }
+          .filters { margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 5px; }
+          .table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          .table th { background: #f97316; color: white; padding: 10px; text-align: left; }
+          .table td { padding: 8px; border-bottom: 1px solid #ddd; }
+          .priority-high { background: #fee2e2; }
+          .priority-medium { background: #fef3c7; }
+          .priority-low { background: #dcfce7; }
+          .summary { margin-top: 30px; padding: 15px; background: #f8fafc; border-radius: 5px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">LISTA DE PRODUCTOS FALTANTES</div>
+          <div class="subtitle">Generado el ${dateStr} a las ${timeStr}</div>
+        </div>
+        
+        <div class="filters">
+          <strong>Filtros aplicados:</strong><br>
+          ${selectedSupplier ? `• Proveedor: ${selectedSupplier}<br>` : ''}
+          ${selectedPriority ? `• Prioridad: ${selectedPriority}<br>` : ''}
+          • Total de productos: ${productsToExport.length}
+        </div>
+        
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Proveedor</th>
+              <th>Prioridad</th>
+              <th>Fecha de Solicitud</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+    
+    // Agregar filas de productos
+    productsToExport.forEach(product => {
+      const priorityClass = `priority-${product.priority}`;
+      const date = new Date(product.requested_at).toLocaleDateString();
+      
+      htmlContent += `
+        <tr class="${priorityClass}">
+          <td>${product.product_name}</td>
+          <td>${product.supplier_name}</td>
+          <td>${product.priority.toUpperCase()}</td>
+          <td>${date}</td>
+        </tr>
+      `;
+    });
+    
+    htmlContent += `
+          </tbody>
+        </table>
+        
+        <div class="summary">
+          <strong>Resumen:</strong><br>
+          • Productos de alta prioridad: ${productsToExport.filter(p => p.priority === 'alta').length}<br>
+          • Productos de prioridad media: ${productsToExport.filter(p => p.priority === 'media').length}<br>
+          • Productos de baja prioridad: ${productsToExport.filter(p => p.priority === 'baja').length}<br>
+          • Total general: ${productsToExport.length} productos
+        </div>
+      </body>
+      </html>
+    `;
+    
+    // Crear ventana para imprimir
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    
+    // Esperar a que cargue el contenido y luego imprimir
+    printWindow.onload = function() {
+      printWindow.print();
+      printWindow.onafterprint = function() {
+        printWindow.close();
+        showToast('PDF generado correctamente');
+      };
+    };
+  }
+
+  // 🔧 FUNCIONES DE CONFIRMACIÓN Y ELIMINACIÓN
+  async function confirmMarkAsReceived(productId) {
+    const product = allMissingProducts.find(p => p.id == productId);
+    if (!product) return;
+    
+    const message = `🎉 ¡Excelente noticia!\n\n¿Confirmas que has recibido el producto:\n\n"${product.product_name}"\n\n✅ Esta acción moverá el producto al historial de recibidos.`;
+    
+    if (confirm(message)) {
+      await markAsReceived(productId);
+    }
+  }
+
+  async function confirmDeleteProduct(productId) {
+    const product = allMissingProducts.find(p => p.id == productId);
+    if (!product) return;
+    
+    const message = `⚠️ ¡Atención! Acción irreversible\n\n¿Estás seguro de eliminar permanentemente:\n\n"${product.product_name}"\n\n🗑️ Esta acción eliminará el producto de la lista y no se puede deshacer.`;
+    
+    if (confirm(message)) {
+      await deleteProduct(productId);
+    }
+  }
+
+  async function deleteProduct(productId) {
+    try {
+      // Usar API client en lugar de Supabase directo
+      await window.apiClient.deleteProduct(productId);
+
+      showToast('Producto eliminado correctamente.');
+      renderMissingProducts();
+      
+    } catch (error) {
+      showToast('Error al eliminar producto: ' + error.message, true);
+    }
+  }
+
+  // ⏳ FUNCIONES DE INDICADORES DE CARGA (CORREGIDAS)
+function showLoading(message = 'Cargando...') {
+  // Crear overlay de carga si no existe
+  let overlay = document.getElementById('loading-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'loading-overlay';
+    overlay.className = 'loading-overlay';
+    document.body.appendChild(overlay);
+  }
+  // CORRECCIÓN: Se restaura el HTML completo del spinner
+  overlay.innerHTML = `
+      <div class="loading-text">
+        <div class="spinner"></div>
+        <span>${message}</span>
+      </div>
+    `;
+  overlay.style.display = 'flex';
+}
+
+function hideLoading() {
+  const overlay = document.getElementById('loading-overlay');
+  if (overlay) {
+    overlay.style.display = 'none';
+  }
+}
+
+function showButtonLoading(button, text = 'Procesando...') {
+  button.disabled = true;
+  button.dataset.originalText = button.innerHTML;
+  // CORRECCIÓN: Se añade el <span> del spinner
+  button.innerHTML = `<span class="spinner"></span> ${text}`;
+}
+
+function hideButtonLoading(button) {
+  button.disabled = false;
+  if (button.dataset.originalText) {
+    button.innerHTML = button.dataset.originalText;
+  }
+}
+
+function showToast(message, isError = false) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.remove('bg-green-500', 'bg-red-500', 'opacity-0', 'translate-y-10');
+  toast.classList.add(isError ? 'bg-red-500' : 'bg-green-500', 'opacity-100', 'translate-y-0');
+  setTimeout(() => {
+    toast.classList.remove('opacity-100', 'translate-y-0');
+    toast.classList.add('opacity-0', 'translate-y-10');
+  }, 3000);
+}
+
+  // 🔧 FUNCIONES DEL MODAL PERSONALIZADO
+  let currentAction = null;
+  let currentProductId = null;
+
+  function showConfirmationModal(type, productName, productId) {
+    const modal = document.getElementById('confirmationModal');
+    const modalIcon = document.getElementById('modalIcon');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalConfirm = document.getElementById('modalConfirm');
+    
+    currentProductId = productId;
+    currentAction = type;
+    
+    if (type === 'received') {
+      modalIcon.textContent = '🎉';
+      modalTitle.textContent = '¡Producto Recibido!';
+      modalMessage.innerHTML = `¿Confirmas que has recibido el producto:<br><strong class="text-orange-500 text-lg">${productName}</strong>?`;
+      modalConfirm.textContent = 'Sí, recibido';
+      modalConfirm.className = 'bg-green-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-600 transition-colors';
+    } else {
+      modalIcon.textContent = '⚠️';
+      modalTitle.textContent = 'Eliminar Producto';
+      modalMessage.innerHTML = `¿Estás seguro de eliminar:<br><strong class="text-red-500 text-lg">${productName}</strong>?<br><span class="text-sm text-gray-500">Esta acción no se puede deshacer</span>`;
+      modalConfirm.textContent = 'Sí, eliminar';
+      modalConfirm.className = 'bg-red-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-red-600 transition-colors';
+    }
+    
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+      modal.querySelector('.transform').classList.remove('scale-95', 'opacity-0');
+      modal.querySelector('.transform').classList.add('scale-100', 'opacity-100');
+    }, 10);
+  }
+
+  function hideConfirmationModal() {
+    const modal = document.getElementById('confirmationModal');
+    modal.querySelector('.transform').classList.remove('scale-100', 'opacity-100');
+    modal.querySelector('.transform').classList.add('scale-95', 'opacity-0');
+    setTimeout(() => {
+      modal.classList.add('hidden');
+      currentAction = null;
+      currentProductId = null;
+    }, 300);
+  }
+
+  async function handleModalConfirm() {
+    if (currentAction === 'received') {
+      await markAsReceived(currentProductId);
+    } else {
+      await deleteProduct(currentProductId);
+    }
+    hideConfirmationModal();
+  }
+
+  // Configurar eventos del modal
+  document.getElementById('modalCancel').addEventListener('click', hideConfirmationModal);
+  document.getElementById('modalConfirm').addEventListener('click', handleModalConfirm);
+
+  // Cerrar modal al hacer clic fuera
+  document.getElementById('confirmationModal').addEventListener('click', (e) => {
+    if (e.target.id === 'confirmationModal') {
+      hideConfirmationModal();
+    }
+  });
+
+  // 🔧 FUNCIONES DE CONFIRMACIÓN Y ELIMINACIÓN (ACTUALIZADAS)
+  async function confirmMarkAsReceived(productId) {
+    const product = allMissingProducts.find(p => p.id == productId);
+    if (!product) return;
+    showConfirmationModal('received', product.product_name, productId);
+  }
+
+  async function confirmDeleteProduct(productId) {
+    const product = allMissingProducts.find(p => p.id == productId);
+    if (!product) return;
+    showConfirmationModal('delete', product.product_name, productId);
+  }
+
+// 🔧 EXPONER FUNCIONES GLOBALMENTE PARA HTML
+window.clearAllFilters = clearAllFilters;
+});
+</script>
+
+</body>
+</html>
