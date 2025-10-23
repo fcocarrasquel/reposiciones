@@ -782,7 +782,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // AQUÍ ESTÁ EL CAMBIO QUE SOLICITASTE
                 // ==========================================================
                 if (product.quantity) {
-                    productLine += ` *CANTIDAD (${product.quantity})*`;
+                    productLine += ` *CANTIDAD* *(${product.quantity})*`;
                 }
                 message += `${productLine}\n`;
             });
@@ -1268,6 +1268,7 @@ function addMessageToChat(role, content) {
 </body>
 
 </html>
+
 
 
 
