@@ -119,6 +119,10 @@
                                     <input type="text" id="productName" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500"style="text-transform: uppercase;">
                                 </div>
                                 <div>
+                                    <label for="productQuantity" class="block text-sm font-medium text-gray-700">Cantidad</label>
+                                    <input type="text" id="productQuantity" placeholder="Ej: 5 cajas, 10 und..." class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                </div>
+                                <div>
                                     <label for="supplierName" class="block text-sm font-medium text-gray-700">Proveedor</label>
                                     <input type="text" id="supplierName" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500"style="text-transform: uppercase;">
                                 </div>
@@ -502,8 +506,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       productEl.innerHTML = `
         <div class="flex flex-col md:flex-row justify-between md:items-center">
           <div class="flex-1">
-            <div class="flex items-center gap-2 mb-1">
+            <div class="flex items-center gap-2 mb-1 flex-wrap">
               <h3 class="font-bold text-lg text-red-600">${product.product_name}</h3>
+              ${product.quantity ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">${product.quantity}</span>` : ''}
               <span class="${priorityColor} text-xs px-2 py-1 rounded-full font-medium">${priorityText}</span>
             </div>
             <p class="text-sm text-gray-500">${product.supplier_name}</p>
@@ -593,6 +598,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   addProductForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const productName = document.getElementById('productName').value.trim().toUpperCase();
+    const productQuantity = document.getElementById('productQuantity').value.trim();
     const supplierName = document.getElementById('supplierName').value.trim().toUpperCase();
     const priority = document.getElementById('priority').value;
     
@@ -617,6 +623,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Usar API client en lugar de Supabase directo
       await window.apiClient.addProduct({
         product_name: productName,
+        quantity: productQuantity,
         supplier_name: supplierName,
         priority: priority
       });
@@ -776,7 +783,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (highPriority.length > 0) {
       message += `🚨 *ALTA PRIORIDAD*\n`;
       highPriority.forEach((product, index) => {
-        message += `${index + 1}. ${product.product_name}\n`;
+        let productLine = `${index + 1}. ${product.product_name}`;
+        if (product.quantity) {
+          productLine += ` (${product.quantity})`;
+        }
+        message += `${productLine}\n`;
       });
       message += `\n`;
     }
@@ -785,7 +796,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (mediumPriority.length > 0) {
       message += `⚠️ *PRIORIDAD MEDIA*\n`;
       mediumPriority.forEach((product, index) => {
-        message += `${index + 1}. ${product.product_name}\n`;
+        let productLine = `${index + 1}. ${product.product_name}`;
+        if (product.quantity) {
+          productLine += ` (${product.quantity})`;
+        }
+        message += `${productLine}\n`;
       });
       message += `\n`;
     }
@@ -794,7 +809,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (lowPriority.length > 0) {
       message += `✅ *BAJA PRIORIDAD*\n`;
       lowPriority.forEach((product, index) => {
-        message += `${index + 1}. ${product.product_name}\n`;
+        let productLine = `${index + 1}. ${product.product_name}`;
+        if (product.quantity) {
+          productLine += ` (${product.quantity})`;
+        }
+        message += `${productLine}\n`;
       });
       message += `\n`;
     }
@@ -883,6 +902,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <thead>
             <tr>
               <th>Producto</th>
+              <th>Cantidad</th>
               <th>Proveedor</th>
               <th>Prioridad</th>
               <th>Fecha de Solicitud</th>
@@ -899,6 +919,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       htmlContent += `
         <tr class="${priorityClass}">
           <td>${product.product_name}</td>
+          <td>${product.quantity || ''}</td>
           <td>${product.supplier_name}</td>
           <td>${product.priority.toUpperCase()}</td>
           <td>${date}</td>
@@ -1230,6 +1251,7 @@ function addMessageToChat(role, content) {
 </body>
 
 </html>
+
 
 
 
