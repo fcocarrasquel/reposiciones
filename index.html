@@ -120,7 +120,7 @@
                                 </div>
                                 <div>
                                     <label for="productQuantity" class="block text-sm font-medium text-gray-700">Cantidad</label>
-                                    <input type="text" id="productQuantity" placeholder="Ej: 5 cajas, 10 und..." class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                    <input type="number" oninput="this.value = this.value.replace(/\D/g, '')" id="productQuantity" placeholder="Ej: 5, 10, 20..." class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
                                 </div>
                                 <div>
                                     <label for="supplierName" class="block text-sm font-medium text-gray-700">Proveedor</label>
@@ -1227,6 +1227,7 @@ function addMessageToChat(role, content) {
 </body>
 
 </html>
+
 
 
 
