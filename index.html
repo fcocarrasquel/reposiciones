@@ -142,81 +142,61 @@
                          <h2 class="text-xl font-bold mb-4">Productos Faltantes Actuales</h2>
                          <p class="text-gray-500 mb-4">Una lista de productos que están actualmente fuera de stock.</p>
                          
-                        <!-- 🔍 SISTEMA DE BÚSQUEDA Y FILTROS AVANZADOS (CON BOTÓN PARA OCULTAR) -->
-<div class="bg-white p-4 rounded-lg shadow-md mb-6 border border-gray-200">
-
-    <!-- BOTÓN PARA MOSTRAR/OCULTAR FILTROS -->
-    <button id="toggleFiltersBtn" class="flex justify-between items-center w-full mb-4">
-        <h3 class="text-lg font-bold text-gray-700">Filtros y Acciones</h3>
-        <svg id="filtersChevron" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
-    </button>
-
-    <!-- CONTENEDOR DE FILTROS (Este es el que se oculta) -->
-    <div id="filtersContainer" class="hidden">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-           <!-- Búsqueda por Producto -->
-           <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Buscar Producto</label>
-              <input type="text" id="searchProduct" placeholder="Nombre del producto..."
-                     class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
-           </div>
-           
-           <!-- Filtro por Proveedor -->
-           <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Filtrar por Proveedor</label>
-              <select id="filterSupplier" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
-                 <option value="">Todos los proveedores</option>
-              </select>
-           </div>
-           
-           <!-- Filtro por Prioridad -->
-           <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Filtrar por Prioridad</label>
-              <select id="filterPriority" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
-                 <option value="">Todas las prioridades</option>
-                 <option value="alta">Alta</option>
-                 <option value="media">Media</option>
-                 <option value="baja">Baja</option>
-              </select>
-           </div>
-           
-           <!-- Filtro por Fecha -->
-           <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Ordenar por</label>
-              <select id="sortBy" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
-                 <option value="recent">Más recientes primero</option>
-                 <option value="oldest">Más antiguos primero</option>
-                 <option value="product">Nombre del producto (A-Z)</option>
-                 <option value="supplier">Proveedor (A-Z)</option>
-                 <option value="priority">Prioridad (Alta → Baja)</option>
-              </select>
-           </div>
-        </div>
-        
-        <!-- Indicadores de filtros activos -->
-        <div id="activeFilters" class="flex flex-wrap gap-2 mb-2 hidden">
-           <span class="text-sm text-gray-600">Filtros activos:</span>
-        </div>
-        
-        <!-- Botones de acción -->
-        <div class="flex flex-wrap gap-2">
-           <button id="clearFilters" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300 transition-colors">
-              Limpiar filtros
-           </button>
-           <button id="applyFilters" class="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors">
-              Aplicar filtros
-           </button>
-           <button id="exportPDF" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors">
-              Exportar PDF
-           </button>
-           <button id="sendWhatsApp" class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600 transition-colors">
-              Enviar WhatsApp
-           </button>
-        </div>
-    </div>
-                    
+                        <!-- ====================================================== -->
+                         <!-- SECCIÓN DE FILTROS CORREGIDA Y FUNCIONAL -->
+                         <!-- ====================================================== -->
+                         <div class="bg-white p-4 rounded-lg shadow-md mb-6 border border-gray-200">
+                            <button id="toggleFiltersBtn" class="flex justify-between items-center w-full">
+                                <h3 class="text-lg font-bold text-gray-700">Filtros y Acciones</h3>
+                                <svg id="filtersChevron" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div id="filtersContainer" class="hidden mt-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                   <div>
+                                      <label class="block text-sm font-medium text-gray-700 mb-1">Buscar Producto</label>
+                                      <input type="text" id="searchProduct" placeholder="Nombre del producto..." class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                   </div>
+                                   <div>
+                                      <label class="block text-sm font-medium text-gray-700 mb-1">Filtrar por Proveedor</label>
+                                      <select id="filterSupplier" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                         <option value="">Todos los proveedores</option>
+                                      </select>
+                                   </div>
+                                   <div>
+                                      <label class="block text-sm font-medium text-gray-700 mb-1">Filtrar por Prioridad</label>
+                                      <select id="filterPriority" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                         <option value="">Todas las prioridades</option>
+                                         <option value="alta">Alta</option>
+                                         <option value="media">Media</option>
+                                         <option value="baja">Baja</option>
+                                      </select>
+                                   </div>
+                                   <div>
+                                      <label class="block text-sm font-medium text-gray-700 mb-1">Ordenar por</label>
+                                      <select id="sortBy" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                         <option value="recent">Más recientes primero</option>
+                                         <option value="oldest">Más antiguos primero</option>
+                                         <option value="product">Nombre del producto (A-Z)</option>
+                                         <option value="supplier">Proveedor (A-Z)</option>
+                                         <option value="priority">Prioridad (Alta → Baja)</option>
+                                      </select>
+                                   </div>
+                                </div>
+                                <div id="activeFilters" class="flex flex-wrap gap-2 mb-4 hidden"></div>
+                                <div class="flex flex-wrap gap-2">
+                                   <button id="clearFilters" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300">Limpiar filtros</button>
+                                   <button id="applyFilters" class="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600">Aplicar filtros</button>
+                                   <button id="exportPDF" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">Exportar PDF</button>
+                                   <button id="sendWhatsApp" class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">Enviar WhatsApp</button>
+                                </div>
+                            </div>
+                            <div id="resultsCounter" class="text-sm text-gray-500 mt-2">
+                               Mostrando <span id="resultsCount">0</span> de <span id="totalCount">0</span> productos
+                            </div>
+                         </div>
+                         
                          <div id="missingProductsList" class="space-y-4 pb-24">
                             <!-- Los productos se insertarán aquí dinámicamente -->
                          </div>
@@ -1247,6 +1227,7 @@ function addMessageToChat(role, content) {
 </body>
 
 </html>
+
 
 
 
