@@ -13,7 +13,7 @@
    <script src="js/api.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Trigger deploy2 -->
-    <style>
+   <style>
         body {
             font-family: 'Inter', sans-serif;
         }
@@ -67,7 +67,12 @@
         .chat-bubble-assistant {
             background-color: #f3f4f6; /* gray-100 */
             color: #1f2937; /* gray-800 */
-            /* Para Chrome, Safari, Edge, Opera */
+        }
+
+        /* ================================================ */
+        /* CÓDIGO PARA OCULTAR FLECHAS (EN EL LUGAR CORRECTO) */
+        /* ================================================ */
+        /* Para Chrome, Safari, Edge, Opera, Brave */
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button {
           -webkit-appearance: none;
@@ -1237,6 +1242,7 @@ function addMessageToChat(role, content) {
 </body>
 
 </html>
+
 
 
 
