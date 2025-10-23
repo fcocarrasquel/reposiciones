@@ -54,6 +54,19 @@
             align-items: center;
             gap: 10px;
         }
+        /* --- NUEVO: Estilos para la ventana de Chat --- */
+        .chat-modal {
+            height: 75vh;
+            max-height: 600px;
+        }
+        .chat-bubble-user {
+            background-color: #7c3aed; /* purple-600 */
+            color: white;
+        }
+        .chat-bubble-assistant {
+            background-color: #f3f4f6; /* gray-100 */
+            color: #1f2937; /* gray-800 */
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -266,6 +279,43 @@
             </div>
         </div>
     </div>
+
+    <!-- === INICIO DEL CÓDIGO NUEVO (PARTE 1: HTML del Chat) === -->
+    <!-- Botón Flotante para abrir el Chat -->
+    <button id="openChatBtn" class="fixed bottom-6 right-6 bg-purple-600 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center hover:bg-purple-700 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+    </button>
+
+    <!-- Ventana Modal del Chat -->
+    <div id="chatModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 flex flex-col chat-modal">
+            <!-- Cabecera del Chat -->
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
+                <h3 class="text-lg font-bold text-purple-700 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2V7a2 2 0 012-2h2m6-4H7a2 2 0 00-2 2v10a2 2 0 002 2h2l4 4v-4h2a2 2 0 002-2V7a2 2 0 00-2-2z" /></svg>
+                    Asistente de Inventario
+                </h3>
+                <button id="closeChatBtn" class="text-gray-400 hover:text-gray-700 transition-colors">✖</button>
+            </div>
+            <!-- Cuerpo del Chat (mensajes) -->
+            <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-4">
+                <!-- Mensaje de bienvenida -->
+                <div class="flex items-start gap-3">
+                    <div class="chat-bubble-assistant p-3 rounded-lg max-w-xs md:max-w-md">
+                        ¡Hola! Soy tu asistente de inventario. Puedes preguntarme sobre productos faltantes o el rendimiento de los proveedores.
+                    </div>
+                </div>
+            </div>
+            <!-- Pie del Chat (input y botón de enviar) -->
+            <div class="p-4 border-t bg-gray-50 rounded-b-lg">
+                <form id="chatForm" class="flex gap-2">
+                    <input type="text" id="chatInput" placeholder="Pregúntame algo..." class="flex-1 border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" autocomplete="off">
+                    <button type="submit" class="bg-purple-600 text-white font-bold py-2 px-4 rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">Enviar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- === FIN DEL CÓDIGO NUEVO (PARTE 1) === -->
 
 
 <!-- API Client ya está cargado en js/api.js -->
@@ -1056,5 +1106,6 @@ window.clearAllFilters = clearAllFilters;
 </body>
 
 </html>
+
 
 
