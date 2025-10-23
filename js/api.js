@@ -40,9 +40,9 @@
             return apiCall('getMissing');
         },
         addProduct: function(product) {
-            // El backend espera 'productName' y 'supplierName'
             return apiCall('add', { 
-                productName: product.product_name, 
+                productName: product.product_name,
+                quantity: product.quantity, 
                 supplierName: product.supplier_name,
                 priority: product.priority
             });
@@ -73,3 +73,4 @@
     window.apiClient = apiClient;
 
 })(); // La función se auto-ejecuta al cargar el script
+
