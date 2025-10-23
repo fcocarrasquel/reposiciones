@@ -181,7 +181,7 @@ export default async function handler(req, res) {
           ...(history || []),
           { role: 'user', content: message }
         ],
-        model: 'llama3-8b-8192',
+        model: 'groq/compound',
       });
 
       const responseMessage = completion.choices[0]?.message?.content || "No pude procesar tu solicitud.";
@@ -196,4 +196,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
 
