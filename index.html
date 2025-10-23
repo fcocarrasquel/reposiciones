@@ -9,6 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
     <!-- API Client para Vercel (reemplaza Supabase directo) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
    <script src="js/api.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Trigger deploy2 -->
@@ -1160,24 +1161,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // 4. Función para añadir un mensaje (burbuja de chat) a la ventana
-  function addMessageToChat(role, content) {
-    const messageWrapper = document.createElement('div');
-    const messageBubble = document.createElement('div');
-    
-    const isUser = role === 'user';
-    
-    // Alineamos a la derecha si es el usuario, a la izquierda si es el asistente
-    messageWrapper.className = `flex items-start gap-3 ${isUser ? 'justify-end' : ''}`;
-    // Aplicamos los estilos de color
-    messageBubble.className = `p-3 rounded-lg max-w-xs md:max-w-md ${isUser ? 'chat-bubble-user' : 'chat-bubble-assistant'}`;
+function addMessageToChat(role, content) {
+  const messageWrapper = document.createElement('div');
+  const messageBubble = document.createElement('div');
+  
+  const isUser = role === 'user';
+  
+  messageWrapper.className = `flex items-start gap-3 ${isUser ? 'justify-end' : ''}`;
+  messageBubble.className = `p-3 rounded-lg max-w-xs md:max-w-md ${isUser ? 'chat-bubble-user' : 'chat-bubble-assistant'}`;
 
+  // --- ESTA ES LA LÍNEA MÁGICA ---
+  // Si el mensaje es del asistente, lo procesamos con marked.parse() para crear la tabla.
+  // Si es del usuario, solo mostramos el texto.
+  if (role === 'assistant') {
+    messageBubble.innerHTML = marked.parse(content);
+  } else {
     messageBubble.textContent = content;
-    messageWrapper.appendChild(messageBubble);
-    chatMessages.appendChild(messageWrapper);
-    
-    // Hacemos scroll automático para ver siempre el último mensaje
-    chatMessages.scrollTop = chatMessages.scrollHeight;
   }
+  
+  messageWrapper.appendChild(messageBubble);
+  chatMessages.appendChild(messageWrapper);
+  
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
 
   // 5. Funciones para mostrar y quitar el indicador de "Escribiendo..."
   function addTypingIndicator() {
@@ -1207,6 +1213,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 </body>
 
 </html>
+
 
 
 
