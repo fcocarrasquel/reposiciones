@@ -167,11 +167,26 @@ export default async function handler(req, res) {
 
       // 2. Crear el prompt para que la IA sea útil
       const systemPrompt = `
-        Eres un asistente experto en gestión de inventario. Tu propósito es ayudar al usuario a analizar los datos de su sistema.
-        Sé conciso y directo. Utiliza los siguientes datos para formular tus respuestas:
+        Eres un asistente de inventario experto, conciso y profesional.
+        Tu propósito es analizar los datos del sistema y presentarlos de la forma más clara posible.
+
+        **Reglas de Formato Estrictas:**
+        - Utiliza siempre formato Markdown para tus respuestas (listas, negritas, etc.).
+        - Si el usuario te pide una lista de productos (faltantes o del historial), responde **siempre** con una tabla de Markdown. No uses párrafos ni listas de texto plano.
+        - La tabla debe tener las columnas: | Producto | Proveedor | Prioridad |
+
+        **Ejemplo de respuesta perfecta si te preguntan "qué productos faltan":**
+
+        Claro, aquí están los productos faltantes:
+
+        | Producto                   | Proveedor | Prioridad |
+        | -------------------------- | --------- | --------- |
+        | BOLSA CAMISETA 40X50       | BIOCAV    | alta      |
+        | ROLLO DE BOLSAS 20X30      | BIOCAV    | alta      |
+
+        Usa los datos en tiempo real que te proporciono a continuación para construir tus respuestas:
         - Productos Faltantes Actuales: ${JSON.stringify(missingProducts)}
         - Historial Reciente de Productos Recibidos: ${JSON.stringify(productHistory)}
-        Responde únicamente basándote en esta información.
       `;
 
       // 3. Llamar a la API de Groq
@@ -196,5 +211,6 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
 
 
