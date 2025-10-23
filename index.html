@@ -748,7 +748,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 📱 FUNCIÓN DE ENVÍO POR WHATSAPP (ACTUALIZADA)
+  // 📱 FUNCIÓN DE ENVÍO POR WHATSAPP (CORREGIDA Y ACTUALIZADA)
   function sendToWhatsApp() {
     const selectedSupplier = document.getElementById('filterSupplier').value;
     
@@ -811,71 +811,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const whatsappUrl = `https://web.whatsapp.com/send?text=${encodedMessage}`;
     
     window.open(whatsappUrl, '_blank');
-    showToast(`Mensaje preparado para ${selectedSupplier}. Abre WhatsApp Web para enviar.`);
-  }
-
-    const highPriority = supplierProducts.filter(p => p.priority === 'alta');
-    const mediumPriority = supplierProducts.filter(p => p.priority === 'media');
-    const lowPriority = supplierProducts.filter(p => p.priority === 'baja');
-    
-    processProducts(highPriority, '🚨 *ALTA PRIORIDAD*');
-    processProducts(mediumPriority, '⚠️ *PRIORIDAD MEDIA*');
-    processProducts(lowPriority, '✅ *BAJA PRIORIDAD*');
-    
-    message += `📊 *RESUMEN:*\n`;
-    message += `• Total: ${supplierProducts.length} productos\n\n`;
-    message += `Por favor confirmar disponibilidad y fecha de entrega.`;
-    
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://web.whatsapp.com/send?text=${encodedMessage}`;
-    
-    window.open(whatsappUrl, '_blank');
-    showToast(`Mensaje preparado para ${selectedSupplier}. Abre WhatsApp Web para enviar.`);
-  }
-    
-    // Agregar productos de prioridad media
-    if (mediumPriority.length > 0) {
-      message += `⚠️ *PRIORIDAD MEDIA*\n`;
-      mediumPriority.forEach((product, index) => {
-        let productLine = `${index + 1}. ${product.product_name}`;
-        if (product.quantity) {
-          productLine += ` (${product.quantity})`;
-        }
-        message += `${productLine}\n`;
-      });
-      message += `\n`;
-    }
-    
-    // Agregar productos de baja prioridad
-    if (lowPriority.length > 0) {
-      message += `✅ *BAJA PRIORIDAD*\n`;
-      lowPriority.forEach((product, index) => {
-        let productLine = `${index + 1}. ${product.product_name}`;
-        if (product.quantity) {
-          productLine += ` (${product.quantity})`;
-        }
-        message += `${productLine}\n`;
-      });
-      message += `\n`;
-    }
-    
-    // Resumen
-    message += `📊 *RESUMEN:*\n`;
-    message += `• Alta prioridad: ${highPriority.length} productos\n`;
-    message += `• Prioridad media: ${mediumPriority.length} productos\n`;
-    message += `• Baja prioridad: ${lowPriority.length} productos\n`;
-    message += `• Total: ${supplierProducts.length} productos\n\n`;
-    message += `Por favor confirmar disponibilidad y fecha de entrega.`;
-    
-    // Codificar mensaje para URL
-    const encodedMessage = encodeURIComponent(message);
-    
-    // Crear URL de WhatsApp
-    const whatsappUrl = `https://web.whatsapp.com/send?text=${encodedMessage}`;
-    
-    // Abrir WhatsApp Web en nueva pestaña
-    window.open(whatsappUrl, '_blank');
-    
     showToast(`Mensaje preparado para ${selectedSupplier}. Abre WhatsApp Web para enviar.`);
   }
 
@@ -1292,6 +1227,7 @@ function addMessageToChat(role, content) {
 </body>
 
 </html>
+
 
 
 
