@@ -22,9 +22,10 @@ export default async function handler(req, res) {
 
     console.log('🔹 Acción recibida:', action);
 
-    // --- 📦 AGREGAR PRODUCTO --- (Sin cambios)
+    // --- 📦 AGREGAR PRODUCTO ---
     if (action === 'add') {
-      const { productName, supplierName, priority } = body;
+      const { productName, quantity, supplierName, priority } = body; 
+      
       if (!productName || !supplierName)
         return res.status(400).json({ error: 'Faltan datos' });
 
@@ -33,6 +34,7 @@ export default async function handler(req, res) {
         .insert([
           {
             product_name: productName,
+            quantity: quantity || null, 
             supplier_name: supplierName,
             priority: priority || 'media',
             requested_at: new Date().toISOString(),
@@ -77,15 +79,16 @@ export default async function handler(req, res) {
       );
 
       // Insertar en historial
-      const { error: insertError } = await supabase.from('product_history').insert([
-        {
-          product_name: product.product_name,
-          supplier_name: product.supplier_name,
-          requested_at: product.requested_at,
-          received_at: receivedDate.toISOString(),
-          response_time_days: responseDays,
-        },
-      ]);
+const { error: insertError } = await supabase.from('product_history').insert([
+  {
+    product_name: product.product_name,
+    quantity: product.quantity, 
+    supplier_name: product.supplier_name,
+    requested_at: product.requested_at,
+    received_at: receivedDate.toISOString(),
+    response_time_days: responseDays,
+  },
+])
       if (insertError) throw insertError;
 
       // Eliminar de faltantes
@@ -162,8 +165,8 @@ export default async function handler(req, res) {
       }
 
       // 1. Obtener contexto en tiempo real de Supabase
-      const { data: missingProducts } = await supabase.from('missing_products').select('product_name, supplier_name, priority');
-      const { data: productHistory } = await supabase.from('product_history').select('product_name, supplier_name, response_time_days').limit(15);
+      const { data: missingProducts } = await supabase.from('missing_products').select('product_name, supplier_name, priority, quantity');
+      const { data: productHistory } = await supabase.from('product_history').select('product_name, supplier_name, response_time_days, quantity').limit(15);
 
       // 2. Crear el prompt para que la IA sea útil
       const systemPrompt = `
@@ -206,6 +209,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
 
 
 
