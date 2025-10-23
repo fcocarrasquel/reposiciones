@@ -1137,7 +1137,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 2. Asignamos los eventos para abrir y cerrar la ventana de chat
   openChatBtn.addEventListener('click', () => chatModal.classList.remove('hidden'));
-  closeChatBtn.addEventListener('click', () => chatModal.classList.add('hidden'));
+  closeChatBtn.addEventListener('click', () => {
+  chatModal.classList.add('hidden');
+  resetChat(); // Llamamos a la función para limpiar todo
+});
 
   // 3. Manejamos el envío de mensajes
   chatForm.addEventListener('submit', async (e) => {
@@ -1227,6 +1230,7 @@ function addMessageToChat(role, content) {
 </body>
 
 </html>
+
 
 
 
