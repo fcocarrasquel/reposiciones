@@ -54,7 +54,7 @@
             align-items: center;
             gap: 10px;
         }
-        /* --- NUEVO: Estilos para la ventana de Chat --- */
+        /* --- ESTILOS PARA LA VENTANA DE CHAT --- */
         .chat-modal {
             height: 75vh;
             max-height: 600px;
@@ -72,7 +72,7 @@
 <body class="bg-gray-50 text-gray-800">
 
     <div class="flex h-screen">
-        <!-- Sidebar -->
+        <!-- Sidebar (Sin cambios) -->
         <aside class="w-16 md:w-64 bg-white border-r flex flex-col">
             <div class="border-b p-4">
                 <h1 class="text-xl font-bold text-orange-500 hidden md:block">Productos por Reposición</h1>
@@ -103,7 +103,7 @@
             </nav>
         </aside>
 
-        <!-- Main Content -->
+        <!-- Main Content (Sin cambios) -->
         <main class="flex-1 p-4 md:p-8 overflow-y-auto">
             
             <!-- Vista: Productos Faltantes -->
@@ -214,7 +214,7 @@
                 </div>
             </div>
 
-            <!-- Vista: Historial -->
+            <!-- Vista: Historial (Sin cambios) -->
             <div id="view-historial" class="page-view hidden">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-xl font-bold mb-4">Historial de Productos</h2>
@@ -225,7 +225,7 @@
                 </div>
             </div>
 
-            <!-- Vista: Métricas -->
+            <!-- Vista: Métricas (Sin cambios) -->
             <div id="view-metricas" class="page-view hidden">
                 <h2 class="text-2xl font-bold mb-6">Métricas de Inventario</h2>
                 <p class="text-gray-500 mb-6">Visualiza métricas clave sobre tu inventario de productos.</p>
@@ -256,12 +256,12 @@
         </main>
     </div>
 
-    <!-- Toast Notification -->
+    <!-- Toast Notification (Sin cambios) -->
     <div id="toast" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-5 rounded-lg shadow-xl opacity-0 translate-y-10 transition-all duration-300">
         <p>¡Acción completada con éxito!</p>
     </div>
 
-    <!-- Modal de Confirmación Personalizado -->
+    <!-- Modal de Confirmación Personalizado (Sin cambios) -->
     <div id="confirmationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-95 opacity-0">
             <div class="p-6">
@@ -321,6 +321,10 @@
 <!-- API Client ya está cargado en js/api.js -->
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
+
+  // ===================================================================
+  // AQUÍ COMIENZA TODO TU CÓDIGO JAVASCRIPT ORIGINAL (SIN NINGÚN CAMBIO)
+  // ===================================================================
 
   let supplierChartInstance = null;
   let allMissingProducts = []; // Almacena todos los productos para filtrado
@@ -968,56 +972,56 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ⏳ FUNCIONES DE INDICADORES DE CARGA (CORREGIDAS)
-function showLoading(message = 'Cargando...') {
-  // Crear overlay de carga si no existe
-  let overlay = document.getElementById('loading-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'loading-overlay';
-    overlay.className = 'loading-overlay';
-    document.body.appendChild(overlay);
+  function showLoading(message = 'Cargando...') {
+    // Crear overlay de carga si no existe
+    let overlay = document.getElementById('loading-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'loading-overlay';
+      overlay.className = 'loading-overlay';
+      document.body.appendChild(overlay);
+    }
+    // CORRECCIÓN: Se restaura el HTML completo del spinner
+    overlay.innerHTML = `
+        <div class="loading-text">
+          <div class="spinner"></div>
+          <span>${message}</span>
+        </div>
+      `;
+    overlay.style.display = 'flex';
   }
-  // CORRECCIÓN: Se restaura el HTML completo del spinner
-  overlay.innerHTML = `
-      <div class="loading-text">
-        <div class="spinner"></div>
-        <span>${message}</span>
-      </div>
-    `;
-  overlay.style.display = 'flex';
-}
 
-function hideLoading() {
-  const overlay = document.getElementById('loading-overlay');
-  if (overlay) {
-    overlay.style.display = 'none';
+  function hideLoading() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+      overlay.style.display = 'none';
+    }
   }
-}
 
-function showButtonLoading(button, text = 'Procesando...') {
-  button.disabled = true;
-  button.dataset.originalText = button.innerHTML;
-  // CORRECCIÓN: Se añade el <span> del spinner
-  button.innerHTML = `<span class="spinner"></span> ${text}`;
-}
-
-function hideButtonLoading(button) {
-  button.disabled = false;
-  if (button.dataset.originalText) {
-    button.innerHTML = button.dataset.originalText;
+  function showButtonLoading(button, text = 'Procesando...') {
+    button.disabled = true;
+    button.dataset.originalText = button.innerHTML;
+    // CORRECCIÓN: Se añade el <span> del spinner
+    button.innerHTML = `<span class="spinner"></span> ${text}`;
   }
-}
 
-function showToast(message, isError = false) {
-  const toast = document.getElementById('toast');
-  toast.textContent = message;
-  toast.classList.remove('bg-green-500', 'bg-red-500', 'opacity-0', 'translate-y-10');
-  toast.classList.add(isError ? 'bg-red-500' : 'bg-green-500', 'opacity-100', 'translate-y-0');
-  setTimeout(() => {
-    toast.classList.remove('opacity-100', 'translate-y-0');
-    toast.classList.add('opacity-0', 'translate-y-10');
-  }, 3000);
-}
+  function hideButtonLoading(button) {
+    button.disabled = false;
+    if (button.dataset.originalText) {
+      button.innerHTML = button.dataset.originalText;
+    }
+  }
+
+  function showToast(message, isError = false) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.remove('bg-green-500', 'bg-red-500', 'opacity-0', 'translate-y-10');
+    toast.classList.add(isError ? 'bg-red-500' : 'bg-green-500', 'opacity-100', 'translate-y-0');
+    setTimeout(() => {
+      toast.classList.remove('opacity-100', 'translate-y-0');
+      toast.classList.add('opacity-0', 'translate-y-10');
+    }, 3000);
+  }
 
   // 🔧 FUNCIONES DEL MODAL PERSONALIZADO
   let currentAction = null;
@@ -1098,8 +1102,105 @@ function showToast(message, isError = false) {
     showConfirmationModal('delete', product.product_name, productId);
   }
 
-// 🔧 EXPONER FUNCIONES GLOBALMENTE PARA HTML
-window.clearAllFilters = clearAllFilters;
+  // 🔧 EXPONER FUNCIONES GLOBALMENTE PARA HTML
+  window.clearAllFilters = clearAllFilters;
+
+  // ===================================================================
+  // === INICIO DE LA LÓGICA DEL CHAT (CORREGIDO Y DENTRO DEL BLOQUE) ===
+  // ===================================================================
+
+  // 1. Obtenemos los elementos del HTML que acabamos de añadir
+  const openChatBtn = document.getElementById('openChatBtn');
+  const closeChatBtn = document.getElementById('closeChatBtn');
+  const chatModal = document.getElementById('chatModal');
+  const chatForm = document.getElementById('chatForm');
+  const chatInput = document.getElementById('chatInput');
+  const chatMessages = document.getElementById('chatMessages');
+  
+  // Guardará la conversación para que la IA recuerde lo que se ha hablado
+  let conversationHistory = []; 
+
+  // 2. Asignamos los eventos para abrir y cerrar la ventana de chat
+  openChatBtn.addEventListener('click', () => chatModal.classList.remove('hidden'));
+  closeChatBtn.addEventListener('click', () => chatModal.classList.add('hidden'));
+
+  // 3. Manejamos el envío de mensajes
+  chatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const message = chatInput.value.trim();
+    if (!message) return; // No enviar mensajes vacíos
+
+    // Mostramos el mensaje del usuario en la pantalla
+    addMessageToChat('user', message);
+    chatInput.value = ''; // Limpiamos el input
+    chatForm.querySelector('button').disabled = true; // Deshabilitamos el botón para evitar envíos dobles
+    
+    addTypingIndicator(); // Mostramos el indicador "Escribiendo..."
+
+    try {
+        // ¡Aquí ocurre la magia! Llamamos a la función que creamos en api.js
+        const response = await window.apiClient.chatWithGroq(message, conversationHistory);
+        
+        // Cuando la IA responde, la mostramos en pantalla
+        removeTypingIndicator(); // Quitamos el "Escribiendo..."
+        addMessageToChat('assistant', response.reply);
+
+        // Actualizamos el historial para que la IA tenga contexto
+        conversationHistory.push({ role: 'user', content: message });
+        conversationHistory.push({ role: 'assistant', content: response.reply });
+
+    } catch (error) {
+        removeTypingIndicator();
+        addMessageToChat('assistant', `Lo siento, ocurrió un error: ${error.message}`);
+    } finally {
+        // Habilitamos el botón de nuevo
+        chatForm.querySelector('button').disabled = false;
+        chatInput.focus(); // Ponemos el foco de nuevo en el input
+    }
+  });
+
+  // 4. Función para añadir un mensaje (burbuja de chat) a la ventana
+  function addMessageToChat(role, content) {
+    const messageWrapper = document.createElement('div');
+    const messageBubble = document.createElement('div');
+    
+    const isUser = role === 'user';
+    
+    // Alineamos a la derecha si es el usuario, a la izquierda si es el asistente
+    messageWrapper.className = `flex items-start gap-3 ${isUser ? 'justify-end' : ''}`;
+    // Aplicamos los estilos de color
+    messageBubble.className = `p-3 rounded-lg max-w-xs md:max-w-md ${isUser ? 'chat-bubble-user' : 'chat-bubble-assistant'}`;
+
+    messageBubble.textContent = content;
+    messageWrapper.appendChild(messageBubble);
+    chatMessages.appendChild(messageWrapper);
+    
+    // Hacemos scroll automático para ver siempre el último mensaje
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  // 5. Funciones para mostrar y quitar el indicador de "Escribiendo..."
+  function addTypingIndicator() {
+    const indicatorWrapper = document.createElement('div');
+    indicatorWrapper.id = 'typing-indicator';
+    indicatorWrapper.className = 'flex items-start gap-3';
+    indicatorWrapper.innerHTML = `
+        <div class="chat-bubble-assistant p-3 rounded-lg">
+            <div class="flex items-center gap-1">
+                <span class="h-2 w-2 bg-gray-400 rounded-full animate-pulse [animation-delay:-0.3s]"></span>
+                <span class="h-2 w-2 bg-gray-400 rounded-full animate-pulse [animation-delay:-0.15s]"></span>
+                <span class="h-2 w-2 bg-gray-400 rounded-full animate-pulse"></span>
+            </div>
+        </div>
+    `;
+    chatMessages.appendChild(indicatorWrapper);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function removeTypingIndicator() {
+    const indicator = document.getElementById('typing-indicator');
+    if (indicator) indicator.remove();
+  }
 });
 </script>
 
