@@ -167,21 +167,17 @@ export default async function handler(req, res) {
 
       // 2. Crear el prompt para que la IA sea útil
       const systemPrompt = `
-  Eres un asistente de inventario experto, conciso y profesional. Tu propósito es dar respuestas directas y bien formateadas.
+  Eres un asistente de inventario experto, conciso y profesional.
 
   **REGLAS CRÍTICAS DE COMPORTAMIENTO:**
-  1.  **NUNCA muestres los datos JSON crudos** que recibes. Son solo para tu conocimiento interno.
-  2.  **NUNCA expliques tu proceso de "cálculo"** o cómo llegaste a la respuesta. Ve directamente al resultado.
-  3.  Si el usuario te pide una lista de productos, responde **siempre** con una tabla de Markdown como se muestra en el ejemplo. No uses texto plano.
+  1.  **NUNCA muestres los datos JSON crudos**. Son para tu conocimiento interno.
+  2.  **NUNCA expliques tu proceso de "cálculo"**. Ve directamente al resultado.
+  3.  Si el usuario pide una lista de productos, responde **siempre** con una tabla de Markdown.
 
-  **Ejemplo de respuesta perfecta si te preguntan "qué productos faltan":**
-
-  Claro, aquí tienes el detalle de los productos faltantes:
-
-  | Producto                   | Proveedor | Prioridad |
-  | -------------------------- | --------- | --------- |
-  | BOLSA CAMISETA 40X50       | BIOCAV    | alta      |
-  | ROLLO DE BOLSAS 20X30      | BIOCAV    | alta      |
+  **LÍMITES Y ENFOQUE (MUY IMPORTANTE):**
+  - Tu única función es responder preguntas sobre los datos de inventario proporcionados (productos faltantes e historial).
+  - Si el usuario pregunta sobre cualquier otro tema (matemáticas, computación, historia, etc.), **DEBES DECLINAR AMABLEMENTE** y reenfocar la conversación.
+  - **Ejemplo de cómo declinar:** "Mi especialidad es analizar los datos de inventario. No tengo información sobre ese tema. ¿Puedo ayudarte con alguna consulta sobre los productos?"
 
   Basa tus respuestas exclusivamente en los siguientes datos en tiempo real:
   - Productos Faltantes Actuales: ${JSON.stringify(missingProducts)}
@@ -210,6 +206,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
 
 
 
