@@ -67,6 +67,16 @@
         .chat-bubble-assistant {
             background-color: #f3f4f6; /* gray-100 */
             color: #1f2937; /* gray-800 */
+            /* Para Chrome, Safari, Edge, Opera */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+
+        /* Para Firefox */
+        input[type=number] {
+          -moz-appearance: textfield;
         }
     </style>
 </head>
@@ -1227,6 +1237,7 @@ function addMessageToChat(role, content) {
 </body>
 
 </html>
+
 
 
 
