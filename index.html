@@ -1121,6 +1121,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Guardará la conversación para que la IA recuerde lo que se ha hablado
   let conversationHistory = []; 
 
+ // NUEVA FUNCIÓN para reiniciar el chat
+  function resetChat() {
+    // 1. Borra el historial de la conversación
+    conversationHistory = [];
+    // 2. Limpia la ventana de mensajes y deja solo el de bienvenida
+    chatMessages.innerHTML = `
+      <div class="flex items-start gap-3">
+          <div class="chat-bubble-assistant p-3 rounded-lg max-w-xs md:max-w-md">
+              ¡Hola! Soy tu asistente de inventario. Puedes preguntarme sobre productos faltantes o el rendimiento de los proveedores.
+          </div>
+      </div>
+    `;
+  }   
+
   // 2. Asignamos los eventos para abrir y cerrar la ventana de chat
   openChatBtn.addEventListener('click', () => chatModal.classList.remove('hidden'));
   closeChatBtn.addEventListener('click', () => chatModal.classList.add('hidden'));
@@ -1213,6 +1227,7 @@ function addMessageToChat(role, content) {
 </body>
 
 </html>
+
 
 
 
