@@ -767,28 +767,52 @@ document.addEventListener('DOMContentLoaded', async () => {
     const now = new Date();
     const dateStr = now.toLocaleDateString();
     
-    let message = `📋 *LISTA DE PRODUCTOS FALTANTES ECOLIMP*\n`;
+    // ==========================================================
+    // INCLUYE TU TÍTULO PERSONALIZADO
+    // ==========================================================
+    let message = `📋 *LISTA DE PRODUCTOS FALTANTES DE ECOLIMP*\n`;
+    
     message += `👨‍💼 *Proveedor:* ${selectedSupplier}\n`;
     message += `📅 *Fecha:* ${dateStr}\n\n`;
     message += `*PRODUCTOS SOLICITADOS:*\n\n`;
     
-    // Función interna para procesar cada grupo de productos
     const processProducts = (products, title) => {
         if (products.length > 0) {
             message += `${title}\n`;
             products.forEach((product, index) => {
                 let productLine = `${index + 1}. ${product.product_name}`;
+                
                 // ==========================================================
-                // AQUÍ ESTÁ EL CAMBIO QUE SOLICITASTE
+                // AQUÍ ESTÁ LA LÍNEA CORREGIDA CON TU FORMATO
                 // ==========================================================
                 if (product.quantity) {
                     productLine += ` *CANTIDAD* *(${product.quantity})*`;
                 }
+
                 message += `${productLine}\n`;
             });
             message += `\n`;
         }
     };
+
+    const highPriority = supplierProducts.filter(p => p.priority === 'alta');
+    const mediumPriority = supplierProducts.filter(p => p.priority === 'media');
+    const lowPriority = supplierProducts.filter(p => p.priority === 'baja');
+    
+    processProducts(highPriority, '🚨 *ALTA PRIORIDAD*');
+    processProducts(mediumPriority, '⚠️ *PRIORIDAD MEDIA*');
+    processProducts(lowPriority, '✅ *BAJA PRIORIDAD*');
+    
+    message += `📊 *RESUMEN:*\n`;
+    message += `• Total: ${supplierProducts.length} productos\n\n`;
+    message += `Por favor confirmar disponibilidad y fecha de entrega.`;
+    
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://web.whatsapp.com/send?text=${encodedMessage}`;
+    
+    window.open(whatsappUrl, '_blank');
+    showToast(`Mensaje preparado para ${selectedSupplier}. Abre WhatsApp Web para enviar.`);
+  }
 
     const highPriority = supplierProducts.filter(p => p.priority === 'alta');
     const mediumPriority = supplierProducts.filter(p => p.priority === 'media');
@@ -1268,6 +1292,7 @@ function addMessageToChat(role, content) {
 </body>
 
 </html>
+
 
 
 
